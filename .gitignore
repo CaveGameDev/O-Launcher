@@ -1,0 +1,11 @@
+# Freebuff workspace metadata
+.freebuff/
+
+# Local extracted/runtime artifacts (archives are the deployment source)
+data/
+maps/
+img/
+audio/
+
+# Local RPG Maker save/config state
+*.rpgsave
