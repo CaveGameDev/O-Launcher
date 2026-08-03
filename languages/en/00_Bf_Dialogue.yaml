@@ -1,0 +1,13 @@
+# =========================================================================================
+# BF Dialogue
+# =========================================================================================
+
+message_0:
+    faceset: bf
+    faceindex: 0
+    text: beep!
+
+message_11:
+      faceset: MainCharacters_DreamWorld
+      faceindex: 2
+      text: a ver
