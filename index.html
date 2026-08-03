@@ -182,13 +182,52 @@
                             return '';
                         },
                         existsSync: function(path) { return true; },
+                        mkdirSync: function(dirPath) { return true; },
+                        unlinkSync: function(path) {
+                            var key = window.stripSdcardPath ? window.stripSdcardPath(path) : path;
+                            delete memoryFS[key];
+                        },
                         writeFileSync: function(path, data) {
                             // Convert Buffer/Uint8Array to string if needed
                             var strData = data;
                             if (data instanceof Uint8Array || (typeof Buffer !== 'undefined' && data instanceof Buffer)) {
                                 strData = new TextDecoder('utf-8').decode(data);
                             }
-                            memoryFS[path] = strData;
+                            // Normalize the key exactly like readFileSync does so
+                            // writes and reads always hit the same memoryFS slot.
+                            var key = window.stripSdcardPath ? window.stripSdcardPath(path) : path;
+                            memoryFS[key] = strData;
+                        },
+                        writeFile: function(path, data, callback) {
+                            // Async write used by DataManager.writeToFileAsync from
+                            // the save menu. Lands in the same memoryFS so later
+                            // readFileSync reads (e.g. title screen TITLEDATA)
+                            // see the data immediately.
+                            this.writeFileSync(path, data);
+                            if (typeof callback === 'function') {
+                                setTimeout(function() { callback(null); }, 0);
+                            }
+                        },
+                        readFile: function(path, options, callback) {
+                            // Support both fs.readFile(path, cb) and
+                            // fs.readFile(path, options, cb) signatures.
+                            if (typeof options === 'function') {
+                                callback = options;
+                                options = null;
+                            }
+                            var key = window.stripSdcardPath ? window.stripSdcardPath(path) : path;
+                            var content = memoryFS[key];
+                            if (content === undefined) {
+                                content = readFileSyncXHR(key);
+                                if (content !== null) {
+                                    memoryFS[key] = content;
+                                } else {
+                                    content = '';
+                                }
+                            }
+                            if (typeof callback === 'function') {
+                                setTimeout(function() { callback(null, content); }, 0);
+                            }
                         }
                     };
                 }
@@ -448,6 +487,66 @@
         }
     </script>
     
+    <!-- ============================================================ -->
+    <!-- 6.7 DEFAULT SAVE SEEDING (file1.rpgsave) -->
+    <!-- ============================================================ -->
+    <!-- The save bytes are embedded in default_save.js so slot 1 is filled
+         without ever fetching a .rpgsave file (some static hosts won't
+         serve that extension). Runs before the game boots (boot is gated
+         behind the Launch button), so Continue is always available. Only
+         seeds when slot 1 is empty so player progress is never clobbered. -->
+    <script type="text/javascript" src="js/default_save.js"></script>
+    <script>
+        (function() {
+            'use strict';
+            function seedDefaultSave() {
+                try {
+                    if (localStorage.getItem('RPG File1')) { return; }
+                    var content = window.DEFAULT_SAVE_FILE1 || '';
+                    if (!content) {
+                        // Defensive fallback: fetch the file only if the
+                        // embedded constant is somehow missing.
+                        try {
+                            var xhr = new XMLHttpRequest();
+                            xhr.open('GET', 'file1.rpgsave', false);
+                            xhr.send();
+                            if (xhr.status === 200 || xhr.status === 0) {
+                                content = (xhr.responseText || '').trim();
+                            }
+                        } catch (e2) {}
+                    }
+                    content = (content || '').trim();
+                    if (content && content.length > 50) {
+                        // .rpgsave files are already LZString-compressed
+                        // base64, exactly what StorageManager expects. If a
+                        // raw JSON save slips in, compress it first.
+                        var isCompressed = /^[A-Za-z0-9+/=]+$/.test(content) && content.length > 50;
+                        var storageData = isCompressed ? content :
+                            (typeof LZString !== 'undefined' ? LZString.compressToBase64(content) : content);
+                        // Only store if it round-trips, otherwise Continue
+                        // would be silently disabled later.
+                        var check = LZString.decompressFromBase64(storageData);
+                        if (check) {
+                            localStorage.setItem('RPG File1', storageData);
+                            // Belt-and-suspenders: also hand it to the fs
+                            // polyfill so a local-mode StorageManager reads
+                            // the same bytes out of memoryFS.
+                            try {
+                                var fsMod = window.require && window.require('fs');
+                                if (fsMod && fsMod.writeFileSync) {
+                                    fsMod.writeFileSync('file1.rpgsave', storageData);
+                                }
+                            } catch (e3) {}
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Default save seed failed:', e);
+                }
+            }
+            seedDefaultSave();
+        })();
+    </script>
+
     <!-- ============================================================ -->
     <!-- 7. PLUGINS & MAIN -->
     <!-- ============================================================ -->
