@@ -213,15 +213,21 @@ Window_OmoriInputLetters.prototype.onNameOk = function() {
 //-----------------------------------------------------------------------------
 // Title Screen Switch Check
 //-----------------------------------------------------------------------------
-DataManager.writeToFile = function(text, filename) {
-    var fs = require('fs');
-    var dirPath = StorageManager.localFileDirectoryPath();
-    if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath);
+ // Browser build: the fs shim may only implement writeFileSync, so avoid
+    // the async-only fs.writeFile (it crashed the save menu with
+    // "TypeError: fs.writeFile is not a function"). Defer the callback so the
+    // waiting-window animation still runs as expected.
+//For short, File Saving Sucks
+    try {
+        fs.writeFileSync(dirPath + '/' + filename, text);
+    } catch (e) {
+        console.warn("writeToFileAsync failed: " + e);
     }
-    // console.log("Writing File: " + filename + " Text: " + text);
-    fs.writeFileSync(dirPath + '/' + filename, text);
+    setTimeout(function() {
+        if (!!callback) { callback(); }
+    }, 0);
 }
+
 
 DataManager.writeToFileAsync = function(text, filename, callback) {
     var fs = require('fs');
