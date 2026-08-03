@@ -217,9 +217,19 @@ Window_OmoriInputLetters.prototype.onNameOk = function() {
     // the async-only fs.writeFile (it crashed the save menu with
     // "TypeError: fs.writeFile is not a function"). Defer the callback so the
     // waiting-window animation still runs as expected.
-//For short, File Saving Sucks
+
+  DataManager.writeToFile = function(text, filename) {
+    var fs = require('fs');
+    var dirPath = StorageManager.localFileDirectoryPath();
+    if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath);
+    }
+    fs.writeFileSync(dirPath + '/' + filename, text);
+}
+
+DataManager.writeToFileAsync = function(text, filename, callback) {
     try {
-        fs.writeFileSync(dirPath + '/' + filename, text);
+        DataManager.writeToFile(text, filename);
     } catch (e) {
         console.warn("writeToFileAsync failed: " + e);
     }
@@ -228,28 +238,12 @@ Window_OmoriInputLetters.prototype.onNameOk = function() {
     }, 0);
 }
 
-
-DataManager.writeToFileAsync = function(text, filename, callback) {
-    var fs = require('fs');
-    var dirPath = StorageManager.localFileDirectoryPath();
-    if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath);
-    }
-    // console.log("Writing File: " + filename + " Text: " + text);
-    //fs.writeFileSync(dirPath + '/' + filename, text);   
-
-    fs.writeFile(dirPath + '/' + filename, text, (err) => {
-        if(!!callback) {callback()}
-    })
-}
-
 DataManager.readFromFile = function(filename) {
     var fs = require('fs');
     var dirPath = StorageManager.localFileDirectoryPath();
     if (!fs.existsSync(dirPath + '/' + filename)) {
         return 0;
     }
-    // console.log("Reading File: " + fs.readFileSync(dirPath + '/' + filename));
     return fs.readFileSync(dirPath + '/' + filename, "utf-8");
 }
 
