@@ -2,9 +2,21 @@
 // ZipLoader - fflate in-page VFS
 //=============================================================================
 // data.zip, maps.zip, image parts, and audio parts are extracted before the
-// Launch button appears. Everything lives in memory for the current page only:
-// no Service Worker, Cache API, archive cache, or VFS
-// localStorage is used. RPG save persistence remains in StorageManager.
+// Launch button appears. The extracted archives live in memory for the current
+// page; RPG save persistence remains in StorageManager.
+//
+// v2 - fast boot changes:
+//  * Part downloads run with bounded concurrency (previously one at a time),
+//    and the four archives (data, maps, images, audio) download in parallel.
+//  * After the first successful load each combined archive is persisted to
+//    IndexedDB as a Blob. Later boots verify against manifest.json (one small
+//    request) and read straight from disk, skipping the ~1.5 GB download.
+//    If no manifest.json is deployed, a HEAD request per part is used instead.
+//  * Asset fetches no longer use cache:'no-store', so the browser HTTP cache
+//    can also participate when the server sends cache headers.
+//  * An optional account id (?account=, localStorage 'wo.accountId', or
+//    base.ini accountId) is recorded with the cache metadata so a server-side
+//    warm-cache layer can key state per account instead of per machine.
 
 (function() {
     'use strict';
@@ -35,6 +47,13 @@
     var _origSend = XMLHttpRequest.prototype.send;
     var _bitmapHookPrototype = null;
     var _graphicsHookTarget = null;
+
+    // ---- config / account ---------------------------------------------------
+    var CONCURRENCY = 6;
+    var _cacheEnabled = true;
+    var _config = { baseUrl: '', useRemoteParts: false, accountId: '', concurrency: '6', cacheEnabled: true };
+    var _accountId = 'default';
+    var _manifest; // undefined = not loaded yet, null = unavailable, object = parsed
 
     function progress(percent, label) {
         var fill = document.getElementById('zipProgressFill');
@@ -127,9 +146,12 @@
             Math.round(done / 1048576 * 10) / 10 + ' MB)');
     }
 
+    // NOTE: no cache:'no-store' here. When the server sends cache headers the
+    // browser HTTP cache can serve parts directly; correctness of the asset
+    // version is handled by manifest.json (or per-part HEAD verification).
     function fetchBytes(url, start, span, label) {
         if (!_origFetch) return Promise.reject(new Error('Fetch is unavailable.'));
-        return _origFetch(url, { cache: 'no-store' }).then(function(response) {
+        return _origFetch(url).then(function(response) {
             if (!response.ok) throw new Error('HTTP ' + response.status + ' for ' + url);
             var total = Number(response.headers.get('content-length')) || 0;
             if (!response.body || !response.body.getReader) {
@@ -163,8 +185,35 @@
         });
     }
 
+    // Bounded-concurrency fetch queue. Resolves with results in request order.
+    function fetchQueue(items) {
+        var results = new Array(items.length);
+        var index = 0;
+        var active = 0;
+        return new Promise(function(resolve, reject) {
+            function pump() {
+                while (active < CONCURRENCY && index < items.length) {
+                    (function(i) {
+                        active++;
+                        fetchBytes(items[i].url, items[i].start, items[i].span, items[i].label).then(function(bytes) {
+                            results[i] = bytes;
+                            active--;
+                            if (index < items.length) pump();
+                            else if (active === 0) resolve(results);
+                        }, function(err) {
+                            active--;
+                            reject(err);
+                        });
+                    })(index++);
+                }
+            }
+            pump();
+        });
+    }
+
+    // ---- base.ini -----------------------------------------------------------
     function parseBaseIni(text) {
-        var config = { baseUrl: '', useRemoteParts: false };
+        var config = { baseUrl: '', useRemoteParts: false, accountId: '', concurrency: '6', cacheEnabled: true };
         String(text || '').split(/\r?\n/).forEach(function(line) {
             line = line.trim();
             if (!line || line[0] === ';' || line[0] === '#') return;
@@ -174,32 +223,235 @@
             var value = line.slice(separator + 1).trim();
             if (key === 'baseUrl') config.baseUrl = value;
             if (key === 'useRemoteParts') config.useRemoteParts = value.toLowerCase() === 'true';
+            if (key === 'accountId') config.accountId = value;
+            if (key === 'concurrency') config.concurrency = value;
+            if (key === 'cacheEnabled') config.cacheEnabled = value.toLowerCase() !== 'false';
         });
         return config;
     }
 
     function loadConfig() {
         if (_configPromise) return _configPromise;
-        _configPromise = fetchBytes('base.ini', 0, 0, 'Reading base.ini')
-            .then(function(bytes) { return parseBaseIni(new TextDecoder().decode(bytes)); })
-            .catch(function() { return { baseUrl: '', useRemoteParts: false }; });
+        _configPromise = _origFetch('base.ini')
+            .then(function(response) {
+                if (!response.ok) return '';
+                return response.text();
+            })
+            .then(function(text) { return parseBaseIni(text); })
+            .catch(function() { return { baseUrl: '', useRemoteParts: false, accountId: '', concurrency: '6', cacheEnabled: true }; });
         return _configPromise;
     }
 
-    function lookupPath(path) {
-        var normalized = normalizePath(path);
-        var decoded = normalized;
-        try {
-            decoded = decodeURIComponent(normalized);
-        } catch (e) {
-            // Keep the original normalized path if a malformed escape is used.
-        }
-        return {
-            exact: normalized,
-            insensitive: decoded.toLowerCase()
-        };
+    function applyConfig(config) {
+        _config = config || _config;
+        var c = parseInt(_config.concurrency, 10);
+        if (c >= 1 && c <= 16) CONCURRENCY = c;
+        _cacheEnabled = _config.cacheEnabled !== false;
     }
 
+    function resolveAccountId() {
+        var id = null;
+        try {
+            var params = new URLSearchParams(window.location.search);
+            id = params.get('account');
+        } catch (e) {}
+        if (!id) {
+            try { id = window.localStorage.getItem('wo.accountId'); } catch (e) {}
+        }
+        if (!id) id = _config.accountId;
+        return id || 'default';
+    }
+
+    // ---- IndexedDB archive cache ---------------------------------------------
+    var IDB_NAME = 'WO_Assets';
+    var _idbPromise = null;
+
+    function idbOpen() {
+        if (typeof indexedDB === 'undefined') {
+            return Promise.reject(new Error('indexedDB unavailable'));
+        }
+        return new Promise(function(resolve, reject) {
+            var req = indexedDB.open(IDB_NAME, 1);
+            req.onupgradeneeded = function(e) {
+                var db = e.target.result;
+                if (!db.objectStoreNames.contains('archives')) {
+                    db.createObjectStore('archives', { keyPath: 'key' });
+                }
+                if (!db.objectStoreNames.contains('meta')) {
+                    db.createObjectStore('meta', { keyPath: 'key' });
+                }
+            };
+            req.onsuccess = function(e) { resolve(e.target.result); };
+            req.onerror = function(e) { reject(e.target.error); };
+        });
+    }
+
+    function idb() {
+        if (!_idbPromise) _idbPromise = idbOpen();
+        return _idbPromise;
+    }
+
+    function idbGet(store, key) {
+        return idb().then(function(db) {
+            return new Promise(function(resolve) {
+                try {
+                    var tx = db.transaction(store, 'readonly');
+                    var req = tx.objectStore(store).get(key);
+                    req.onsuccess = function() { resolve(req.result ? req.result.value : null); };
+                    req.onerror = function() { resolve(null); };
+                } catch (e) { resolve(null); }
+            });
+        }).catch(function() { return null; });
+    }
+
+    function idbPut(store, key, value) {
+        return idb().then(function(db) {
+            return new Promise(function(resolve) {
+                try {
+                    var tx = db.transaction(store, 'readwrite');
+                    tx.objectStore(store).put({ key: key, value: value });
+                    tx.oncomplete = function() { resolve(true); };
+                    tx.onerror = function() { resolve(false); };
+                    tx.onabort = function() { resolve(false); };
+                } catch (e) { resolve(false); }
+            });
+        }).catch(function() { return false; });
+    }
+
+    function cacheGetArchive(name) {
+        return idbGet('archives', 'archive:' + name).then(function(blob) {
+            if (!blob) return null;
+            if (typeof blob.arrayBuffer === 'function') {
+                return blob.arrayBuffer().then(function(ab) { return new Uint8Array(ab); });
+            }
+            if (blob instanceof ArrayBuffer) return new Uint8Array(blob);
+            if (blob && blob.buffer) return new Uint8Array(blob.buffer, blob.byteOffset, blob.byteLength);
+            return null;
+        });
+    }
+
+    // Store as a Blob so Chrome/Edge can spill large archives to disk.
+    function cachePutArchive(name, bytes) {
+        try {
+            var blob = new Blob([bytes]);
+            return idbPut('archives', 'archive:' + name, blob);
+        } catch (e) {
+            return Promise.resolve(false);
+        }
+    }
+
+    function cacheGetMeta(name) {
+        return idbGet('meta', 'meta:' + name);
+    }
+
+    function cachePutMeta(name, meta) {
+        return idbPut('meta', 'meta:' + name, meta);
+    }
+
+    // ---- archive metadata (manifest first, HEAD fallback) ---------------------
+    function loadManifest() {
+        if (_manifest !== undefined) return Promise.resolve(_manifest);
+        return _origFetch('manifest.json').then(function(response) {
+            if (!response.ok) { _manifest = null; return null; }
+            return response.json().then(function(json) {
+                _manifest = json || null;
+                return _manifest;
+            }, function() { _manifest = null; return null; });
+        }).catch(function() { _manifest = null; return null; });
+    }
+
+    function archiveBaseUrl(desc) {
+        var base = _config.baseUrl.replace(/\/+$/, '');
+        if (!_config.useRemoteParts || !desc.folder) return base;
+        return base + '/' + desc.folder;
+    }
+
+    function headFetch(url) {
+        return _origFetch(url, { method: 'HEAD' }).then(function(response) {
+            return { size: Number(response.headers.get('content-length')) || 0 };
+        });
+    }
+
+    function headQueue(urls) {
+        var results = new Array(urls.length);
+        var index = 0;
+        var active = 0;
+        return new Promise(function(resolve, reject) {
+            function pump() {
+                while (active < CONCURRENCY && index < urls.length) {
+                    (function(i) {
+                        active++;
+                        headFetch(urls[i]).then(function(info) {
+                            results[i] = info;
+                            active--;
+                            if (index < urls.length) pump();
+                            else if (active === 0) resolve(results);
+                        }, function(err) {
+                            active--;
+                            reject(err);
+                        });
+                    })(index++);
+                }
+            }
+            pump();
+        });
+    }
+
+    function headMeta(desc) {
+        var base = archiveBaseUrl(desc);
+        var folder = desc.folder ? base + '/' + desc.folder : base;
+        var urls = [];
+        for (var i = 0; i < desc.count; i++) {
+            var suffix = desc.pad ? String(i + 1).padStart(desc.pad, '0') : '';
+            var fileName = desc.name + (desc.pad ? '.part' + suffix : '');
+            urls.push(folder ? folder + '/' + fileName : fileName);
+        }
+        return headQueue(urls).then(function(infos) {
+            var parts = infos.map(function(info, idx) {
+                return { name: urls[idx].split('/').pop(), size: info.size };
+            });
+            var totalSize = 0;
+            parts.forEach(function(p) { totalSize += p.size; });
+            return {
+                version: 'head:' + parts.map(function(p) { return p.name + ':' + p.size; }).join(','),
+                totalSize: totalSize,
+                parts: parts
+            };
+        }).catch(function() { return null; });
+    }
+
+    // Returns the expected metadata for an archive, or null if it cannot be
+    // determined (in which case the archive is simply downloaded uncached).
+    function ensureMeta(desc) {
+        return loadManifest().then(function(manifest) {
+            if (manifest && manifest.archives && manifest.archives[desc.name]) {
+                var m = manifest.archives[desc.name];
+                return {
+                    version: String(manifest.version || '1'),
+                    totalSize: m.totalSize || 0,
+                    parts: m.parts || []
+                };
+            }
+            return headMeta(desc);
+        });
+    }
+
+    // Prefer manifest-declared part counts/padding over the local defaults so
+    // remote deployments can re-split archives without touching this file.
+    function descWithManifest(desc) {
+        if (_manifest && _manifest.archives && _manifest.archives[desc.name]) {
+            var m = _manifest.archives[desc.name];
+            return {
+                name: desc.name,
+                folder: typeof m.folder === 'string' ? m.folder : desc.folder,
+                count: m.count || desc.count,
+                pad: typeof m.pad === 'number' ? m.pad : desc.pad
+            };
+        }
+        return desc;
+    }
+
+    // ---- VFS population -------------------------------------------------------
     function addZipFiles(bytes, label) {
         return new Promise(function(resolve, reject) {
             // fflate's async unzip keeps extraction off the synchronous boot
@@ -214,8 +466,8 @@
                 Object.keys(files).forEach(function(name) {
                     if (!name || /\/$/.test(name)) return;
                     var normalized = normalizePath(name);
-                    var bytes = files[name];
-                    _vfs[normalized] = bytes;
+                    var fileBytes = files[name];
+                    _vfs[normalized] = fileBytes;
                     // Use the same decoded/case-folded key as bytesFor() so
                     // encoded names and normal names resolve identically.
                     _vfsInsensitive[lookupPath(normalized).insensitive] = normalized;
@@ -227,77 +479,18 @@
         });
     }
 
-    function loadArchive(key, url, start, span, label) {
-        if (_archivePromises[key]) return _archivePromises[key];
-        _archivePromises[key] = fetchBytes(url, start, span, 'Downloading ' + label)
-            .then(function(bytes) {
-                progress(start + span * 0.9, 'Unzipping ' + label + '...');
-                return addZipFiles(bytes, label).then(function() {
-                    progress(start + span, label + ' ready');
-                    return true;
-                });
-            }).catch(function(error) {
-                delete _archivePromises[key];
-                throw error;
-            });
-        return _archivePromises[key];
-    }
-
-    function joinParts(folder, archiveName, count, pad, start, span, label) {
-        var key = 'parts:' + folder + '/' + archiveName;
-        if (_archivePromises[key]) return _archivePromises[key];
-        _archivePromises[key] = (async function() {
-            var pieces = [];
-            var total = 0;
-            for (var i = 1; i <= count; i++) {
-                var suffix = String(i).padStart(pad, '0');
-                var piece = await fetchBytes(folder + '/' + archiveName + '.part' + suffix,
-                    start + span * ((i - 1) / count), span / count,
-                    'Downloading ' + label + ' part ' + i + '/' + count);
-                pieces.push(piece);
-                total += piece.length;
-            }
-            var combined = new Uint8Array(total);
-            var offset = 0;
-            pieces.forEach(function(piece) {
-                combined.set(piece, offset);
-                offset += piece.length;
-            });
-            progress(start + span * 0.9, 'Unzipping ' + label + '...');
-            await addZipFiles(combined, label);
-            progress(start + span, label + ' ready');
-            return true;
-        })().catch(function(error) {
-            delete _archivePromises[key];
-            throw error;
-        });
-        return _archivePromises[key];
-    }
-
-    function ensureArchiveForPath(path) {
-        path = normalizePath(path);
-        if (path.indexOf('data/') === 0 || path.indexOf('maps/') === 0) {
-            return init();
+    function lookupPath(path) {
+        var normalized = normalizePath(path);
+        var decoded = normalized;
+        try {
+            decoded = decodeURIComponent(normalized);
+        } catch (e) {
+            // Keep the original normalized path if a malformed escape is used.
         }
-        if (path.indexOf('img/') === 0) {
-            return init().then(function() {
-                return loadConfig().then(function(config) {
-                    var folder = config.useRemoteParts
-                        ? config.baseUrl.replace(/\/+$/, '') + '/img_pack' : 'img_pack';
-                    return joinParts(folder, 'img_repk.zip', 55, 2, 0, 100, 'images');
-                });
-            });
-        }
-        if (path.indexOf('audio/') === 0) {
-            return init().then(function() {
-                return loadConfig().then(function(config) {
-                    var folder = config.useRemoteParts
-                        ? config.baseUrl.replace(/\/+$/, '') + '/aud_pack' : 'aud_pack';
-                    return joinParts(folder, 'audio_repk.zip', 111, 3, 0, 100, 'audio');
-                });
-            });
-        }
-        return Promise.resolve();
+        return {
+            exact: normalized,
+            insensitive: decoded.toLowerCase()
+        };
     }
 
     function bytesFor(path) {
@@ -326,6 +519,88 @@
         });
     }
 
+    // ---- download / cache orchestration --------------------------------------
+    function downloadArchive(desc, start, span, label, expected) {
+        var base = archiveBaseUrl(desc);
+        var folder = desc.folder ? base + '/' + desc.folder : base;
+        var items = [];
+        for (var i = 0; i < desc.count; i++) {
+            var suffix = desc.pad ? String(i + 1).padStart(desc.pad, '0') : '';
+            var fileName = desc.name + (desc.pad ? '.part' + suffix : '');
+            items.push({
+                url: folder ? folder + '/' + fileName : fileName,
+                start: start + span * (i / desc.count),
+                span: span / desc.count,
+                label: label + ' part ' + (i + 1) + '/' + desc.count
+            });
+        }
+        var t0 = performance.now();
+        return fetchQueue(items).then(function(pieces) {
+            // Sanity-check downloaded sizes against the expected metadata. A
+            // mismatch means the assets changed: bump manifest.json's version.
+            if (expected && expected.parts && expected.parts.length === pieces.length) {
+                for (var j = 0; j < pieces.length; j++) {
+                    if (expected.parts[j].size && pieces[j].length !== expected.parts[j].size) {
+                        throw new Error(label + ' part ' + (j + 1) + ' size mismatch (' +
+                            pieces[j].length + ' != ' + expected.parts[j].size +
+                            '); assets changed? bump manifest.json version.');
+                    }
+                }
+            }
+            var total = 0;
+            pieces.forEach(function(p) { total += p.length; });
+            var combined = new Uint8Array(total);
+            var offset = 0;
+            pieces.forEach(function(p) { combined.set(p, offset); offset += p.length; });
+            console.log('ZipLoader: [' + label + '] downloaded ' + (total / 1048576).toFixed(1) +
+                ' MB in ' + (performance.now() - t0).toFixed(0) + ' ms');
+            return addZipFiles(combined, label).then(function() {
+                progress(start + span, label + ' ready');
+                if (_cacheEnabled) {
+                    cachePutArchive(desc.name, combined);
+                    if (expected) cachePutMeta(desc.name, expected);
+                }
+                return true;
+            });
+        });
+    }
+
+    function loadArchiveCached(desc, start, span, label) {
+        return ensureMeta(desc).then(function(expected) {
+            if (!_cacheEnabled || !expected) {
+                return downloadArchive(desc, start, span, label, expected);
+            }
+            var t0 = performance.now();
+            return cacheGetMeta(desc.name).then(function(cached) {
+                if (cached && cached.version === expected.version &&
+                    cached.totalSize === expected.totalSize) {
+                    return cacheGetArchive(desc.name).then(function(bytes) {
+                        if (bytes) {
+                            console.log('ZipLoader: [' + label + '] cache hit (' +
+                                (bytes.length / 1048576).toFixed(1) + ' MB, v' + expected.version +
+                                ', read in ' + (performance.now() - t0).toFixed(0) + ' ms)');
+                            progress(start + span * 0.9, label + ' from cache...');
+                            return addZipFiles(bytes, label + ' (cache)').then(function() {
+                                progress(start + span, label + ' ready (cache)');
+                                return true;
+                            });
+                        }
+                        return downloadArchive(desc, start, span, label, expected);
+                    });
+                }
+                return downloadArchive(desc, start, span, label, expected);
+            });
+        });
+    }
+
+    // All VFS paths (data/, maps/, img/, audio/) are fully satisfied once init()
+    // completes, because init loads every archive. On-demand callers simply wait
+    // for the (deduplicated) init promise.
+    function ensureArchiveForPath(path) {
+        return init();
+    }
+
+    // ---- network interception --------------------------------------------------
     function replayRequest(item) {
         return blobUrlFor(item.path).then(function(blobUrl) {
             var xhr = item.xhr;
@@ -465,32 +740,33 @@
 
     installHooks();
 
+    // ---- boot -----------------------------------------------------------------
     function init() {
         if (_initPromise) return _initPromise;
         _initPromise = (async function() {
+            var t0 = performance.now();
             showProgress();
-            progress(0, 'Loading data.zip first...');
-            await loadArchive('data', 'data.zip', 0, 10, 'data.zip');
-            progress(10, 'Loading maps.zip...');
-            await loadArchive('maps', 'maps.zip', 10, 10, 'maps.zip');
+            progress(0, 'Reading base.ini');
+            applyConfig(await loadConfig());
+            _accountId = resolveAccountId();
+            await loadManifest();
+            progress(1, 'Account: ' + _accountId);
 
-            // Do not expose Launch after only the database. Extract both large
-            // visual/audio archives in this same ordered boot promise so every
-            // resource family is present before plugins and preloaders run.
-            var config = await loadConfig();
-            var baseUrl = config.baseUrl.replace(/\/+$/, '');
-            var imageFolder = config.useRemoteParts ? baseUrl + '/img_pack' : 'img_pack';
-            var audioFolder = config.useRemoteParts ? baseUrl + '/aud_pack' : 'aud_pack';
-            progress(20, 'Loading image archive parts...');
-            await joinParts(imageFolder, 'img_repk.zip', 55, 2, 20, 35, 'images');
-            progress(55, 'Loading audio archive parts...');
-            await joinParts(audioFolder, 'audio_repk.zip', 111, 3, 55, 45, 'audio');
+            var jobs = [
+                loadArchiveCached(descWithManifest({ name: 'data.zip', folder: '', count: 1, pad: 0 }), 2, 8, 'data.zip'),
+                loadArchiveCached(descWithManifest({ name: 'maps.zip', folder: '', count: 1, pad: 0 }), 10, 8, 'maps.zip'),
+                loadArchiveCached(descWithManifest({ name: 'img_repk.zip', folder: 'img_pack', count: 55, pad: 2 }), 18, 38, 'images'),
+                loadArchiveCached(descWithManifest({ name: 'audio_repk.zip', folder: 'aud_pack', count: 111, pad: 3 }), 56, 44, 'audio')
+            ];
+            await Promise.all(jobs);
 
             _ready = true;
             progress(100, 'All assets ready — press LAUNCH');
             drainXhrQueue();
             showLaunchButton();
-            console.log('ZipLoader: data, maps, images, and audio ready (' + Object.keys(_vfs).length + ' files); waiting for Launch');
+            console.log('ZipLoader: data, maps, images, and audio ready (' + Object.keys(_vfs).length +
+                ' files) for account "' + _accountId + '" in ' +
+                ((performance.now() - t0) / 1000).toFixed(1) + ' s; press Launch');
             return true;
         })().catch(function(error) {
             _error = error;
@@ -511,6 +787,16 @@
         getFile: function(path) { return bytesFor(path); },
         getText: function(path) { return textFor(path); },
         getBlobUrl: function(path) { return blobUrlFor(path); },
-        refreshHooks: installHooks
+        refreshHooks: installHooks,
+        // Account plumbing for the warm-cache layer: call setAccount() from a
+        // login flow before ZipLoader.init() (or pass ?account= in the URL).
+        setAccount: function(id) {
+            if (!id) return _accountId;
+            try { window.localStorage.setItem('wo.accountId', String(id)); } catch (e) {}
+            _accountId = String(id);
+            return _accountId;
+        },
+        accountId: function() { return _accountId; },
+        setCacheEnabled: function(flag) { _cacheEnabled = !!flag; return _cacheEnabled; }
     };
 })();
