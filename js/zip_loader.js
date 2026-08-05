@@ -1,23 +1,3 @@
-//=============================================================================
-// ZipLoader - fflate in-page VFS
-//=============================================================================
-// data.zip, maps.zip, image parts, and audio parts are extracted before the
-// Launch button appears. The extracted archives live in memory for the current
-// page; RPG save persistence remains in StorageManager.
-//
-// v2 - fast boot changes:
-//  * Part downloads run with bounded concurrency (previously one at a time),
-//    and the four archives (data, maps, images, audio) download in parallel.
-//  * After the first successful load each combined archive is persisted to
-//    IndexedDB as a Blob. Later boots verify against manifest.json (one small
-//    request) and read straight from disk, skipping the ~1.5 GB download.
-//    If no manifest.json is deployed, a HEAD request per part is used instead.
-//  * Asset fetches no longer use cache:'no-store', so the browser HTTP cache
-//    can also participate when the server sends cache headers.
-//  * An optional account id (?account=, localStorage 'wo.accountId', or
-//    base.ini accountId) is recorded with the cache metadata so a server-side
-//    warm-cache layer can key state per account instead of per machine.
-
 (function() {
     'use strict';
 
@@ -752,19 +732,33 @@
             await loadManifest();
             progress(1, 'Account: ' + _accountId);
 
+            var languagesFailed = false;
             var jobs = [
-                loadArchiveCached(descWithManifest({ name: 'data.zip', folder: '', count: 1, pad: 0 }), 2, 8, 'data.zip'),
-                loadArchiveCached(descWithManifest({ name: 'maps.zip', folder: '', count: 1, pad: 0 }), 10, 8, 'maps.zip'),
-                loadArchiveCached(descWithManifest({ name: 'img_repk.zip', folder: 'img_pack', count: 55, pad: 2 }), 18, 38, 'images'),
+                loadArchiveCached(descWithManifest({ name: 'data.zip', folder: '', count: 1, pad: 0 }), 2, 6, 'data.zip'),
+                loadArchiveCached(descWithManifest({ name: 'maps.zip', folder: '', count: 1, pad: 0 }), 8, 6, 'maps.zip'),
+                // languages.zip is extracted here, BEFORE launch, so the ~210
+                // language YAML reads during plugin setup are served from the
+                // VFS instead of one blocking XHR each. Failure is non-fatal
+                // (older deployments without the zip still boot) but is surfaced
+                // loudly so a missing upload can't hide behind the LAUNCH button.
+                loadArchiveCached(descWithManifest({ name: 'languages.zip', folder: '', count: 1, pad: 0 }), 14, 6, 'languages').catch(function(error) {
+                    languagesFailed = true;
+                    console.error('ZipLoader: languages.zip failed to load (' + error.message + '). ' +
+                        'Upload it next to the archives (project root / baseUrl); language text will be unavailable.');
+                    return false;
+                }),
+                loadArchiveCached(descWithManifest({ name: 'img_repk.zip', folder: 'img_pack', count: 55, pad: 2 }), 20, 36, 'images'),
                 loadArchiveCached(descWithManifest({ name: 'audio_repk.zip', folder: 'aud_pack', count: 111, pad: 3 }), 56, 44, 'audio')
             ];
             await Promise.all(jobs);
 
             _ready = true;
-            progress(100, 'All assets ready — press LAUNCH');
+            progress(100, languagesFailed
+                ? 'WARNING: languages.zip missing — language text unavailable. Press LAUNCH'
+                : 'All assets ready — press LAUNCH');
             drainXhrQueue();
             showLaunchButton();
-            console.log('ZipLoader: data, maps, images, and audio ready (' + Object.keys(_vfs).length +
+            console.log('ZipLoader: data, maps, languages, images, and audio ready (' + Object.keys(_vfs).length +
                 ' files) for account "' + _accountId + '" in ' +
                 ((performance.now() - t0) / 1000).toFixed(1) + ' s; press Launch');
             return true;
@@ -788,6 +782,16 @@
         getText: function(path) { return textFor(path); },
         getBlobUrl: function(path) { return blobUrlFor(path); },
         refreshHooks: installHooks,
+        // True once the language pack's files are in the VFS. The fs polyfill
+        // uses this to decide whether a missing language file means "absent"
+        // (serve '' without a network request) or "pack not loaded" (fall back
+        // to a real XHR, e.g. local dev with the languages/ folder on disk).
+        hasLanguagePack: function() {
+            for (var key in _vfs) {
+                if (key.toLowerCase().indexOf('languages/') === 0) return true;
+            }
+            return false;
+        },
         // Account plumbing for the warm-cache layer: call setAccount() from a
         // login flow before ZipLoader.init() (or pass ?account= in the URL).
         setAccount: function(id) {
