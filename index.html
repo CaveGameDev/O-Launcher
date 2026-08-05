@@ -144,10 +144,29 @@
                     // queue would return an empty response before its blob was
                     // replayed (and later cause JSON/YAML parse failures).
                     var normalized = urlPath.replace(/^\.\//, '').replace(/^\/+/, '');
-                    var isVfs = /^(data|maps|img|audio)\//.test(normalized);
-                    if (isVfs && window.ZipLoader && window.ZipLoader.getFile) {
+                    // Serve anything present in the ZipLoader VFS straight from
+                    // memory. This covers data/, maps/, img/, audio/ AND the
+                    // languages/ folder after languages.zip is extracted, so the
+                    // ~210 language YAML reads become instant lookups instead of
+                    // one blocking XHR per file. Paths not in the VFS fall
+                    // through to a real XHR below (e.g. modded files dropped
+                    // next to the archives that aren't in any zip).
+                    if (window.ZipLoader && window.ZipLoader.getFile) {
                         var bytes = window.ZipLoader.getFile(normalized);
                         if (bytes) return new TextDecoder('utf-8').decode(bytes);
+                    }
+                    // When the language pack IS loaded, its contents are
+                    // authoritative: a language file missing from the VFS is
+                    // simply absent, so return '' instead of firing a blocking
+                    // network XHR (static hosts don't serve the folder, so each
+                    // miss would be a wasted 404 and the game would log a wall
+                    // of errors during plugin setup). Only when the pack failed
+                    // to load do we fall through to the XHR (local dev keeps
+                    // working with the languages/ folder on disk).
+                    if (/^languages\//i.test(normalized) &&
+                        window.ZipLoader && typeof window.ZipLoader.hasLanguagePack === 'function' &&
+                        window.ZipLoader.hasLanguagePack()) {
+                        return '';
                     }
                     const xhr = new XMLHttpRequest();
                     xhr.open('GET', urlPath, false);
