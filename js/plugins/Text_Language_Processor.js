@@ -180,7 +180,11 @@ LanguageManager.loadLanguageFiles = function(language) {
   
   // Prefer ZipLoader VFS (browser mode)
   if (window.ZipLoader && window.ZipLoader.hasLanguagePack && window.ZipLoader.hasLanguagePack()) {
-    var yaml = require('./js/libs/js-yaml-master');
+    var yaml;
+    try { yaml = require('./js/libs/js-yaml-master'); } catch(e) {
+      console.warn('LanguageManager: require(js-yaml) failed, language data unavailable');
+      return;
+    }
     var fileList = [
       '00_bf_dialogue','00_template','01_cutscenes_neighbors','01_map_whitespace',
       '02_cutscenes_hideandseek','02_cutscenes_lostball','02_map_neighborsroom',
