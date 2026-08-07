@@ -3220,6 +3220,23 @@ Gamefall.Encryption = Gamefall.Encryption || {};
 		static loadLanguageFiles(language) {
 			if(!!Utils.isOptionValid("test")) {return super.loadLanguageFiles(language);}
 			
+			// If ZipLoader exists but language pack hasn't been extracted yet,
+			// defer loading until ZipLoader.init() completes (it runs async in
+			// main.js after plugin scripts load). Without this, we'd load empty
+			// data from failed XHRs and the title screen crashes.
+			if (window.ZipLoader && window.ZipLoader.init && !window.ZipLoader.hasLanguagePack()) {
+				var _self = this;
+				var _lang = language;
+				console.log('LanguageManager: ZipLoader not ready, deferring ' + _lang + ' load');
+				window.ZipLoader.init().then(function() {
+					console.log('LanguageManager: ZipLoader ready, loading ' + _lang);
+					_self.loadLanguageFiles(_lang);
+				}).catch(function(e) {
+					console.warn('LanguageManager: ZipLoader init failed, languages unavailable', e);
+				});
+				return;
+			}
+			
 			this._data[language] = {text: {}};
 			
 			// Prefer ZipLoader VFS (browser mode) — languages.zip is already
@@ -3227,7 +3244,14 @@ Gamefall.Encryption = Gamefall.Encryption || {};
 			var useZip = window.ZipLoader && window.ZipLoader.hasLanguagePack && window.ZipLoader.hasLanguagePack();
 			
 			if (useZip) {
-				var yaml = require('./js/libs/js-yaml-master');
+				var yaml;
+				try { yaml = require('./js/libs/js-yaml-master'); } catch(e) {
+					console.warn('LanguageManager: require(js-yaml) failed, falling back to filesystem');
+					useZip = false;
+				}
+			}
+			
+			if (useZip) {
 				var yamlFiles = [
 					'00_bf_dialogue','00_template','01_cutscenes_neighbors','01_map_whitespace',
 					'02_cutscenes_hideandseek','02_cutscenes_lostball','02_map_neighborsroom',
@@ -3328,15 +3352,28 @@ Gamefall.Encryption = Gamefall.Encryption || {};
 			}
 			
 			// Fallback: filesystem-based loading (NW.js / Node.js)
-			var yaml = require('./js/libs/js-yaml-master');
-			var fs = require('fs');
+			var yaml, fs;
+			try {
+				yaml = require('./js/libs/js-yaml-master');
+				fs = require('fs');
+			} catch(e) {
+				console.warn('LanguageManager: require failed (not in Node.js mode), language data will be unavailable until ZipLoader is ready');
+				return;
+			}
 			
-			var folder = '/Languages/' + language + '/';
+			var folder = 'languages/' + language + '/';
 			var dirList = [];
 			try {
 				dirList = fs.readdirSync(folder) || [];
 			} catch(e) {
-				console.warn('readdirSync failed, falling back to static list');
+				// Try uppercase path (legacy)
+				try {
+					folder = 'Languages/' + language + '/';
+					dirList = fs.readdirSync(folder) || [];
+				} catch(e2) {
+					console.warn('readdirSync failed for both paths, language data unavailable');
+					return;
+				}
 			}
 			
 			var yamlFiles = dirList.filter(function(f) { return f.endsWith('.yaml'); });
