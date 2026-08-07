@@ -3220,6 +3220,23 @@ Gamefall.Encryption = Gamefall.Encryption || {};
 		static loadLanguageFiles(language) {
 			if(!!Utils.isOptionValid("test")) {return super.loadLanguageFiles(language);}
 			
+			// If ZipLoader exists but language pack hasn't been extracted yet,
+			// defer loading until ZipLoader.init() completes (it runs async in
+			// main.js after plugin scripts load). Without this, we'd load empty
+			// data from failed XHRs and the title screen crashes.
+			if (window.ZipLoader && window.ZipLoader.init && !window.ZipLoader.hasLanguagePack()) {
+				var _self = this;
+				var _lang = language;
+				console.log('LanguageManager: ZipLoader not ready, deferring ' + _lang + ' load');
+				window.ZipLoader.init().then(function() {
+					console.log('LanguageManager: ZipLoader ready, loading ' + _lang);
+					_self.loadLanguageFiles(_lang);
+				}).catch(function(e) {
+					console.warn('LanguageManager: ZipLoader init failed, languages unavailable', e);
+				});
+				return;
+			}
+			
 			this._data[language] = {text: {}};
 			
 			// Prefer ZipLoader VFS (browser mode) — languages.zip is already
@@ -3227,94 +3244,34 @@ Gamefall.Encryption = Gamefall.Encryption || {};
 			var useZip = window.ZipLoader && window.ZipLoader.hasLanguagePack && window.ZipLoader.hasLanguagePack();
 			
 			if (useZip) {
-				var yaml = require('./js/libs/js-yaml-master');
-				var yamlFiles = [
-					'00_bf_dialogue','00_template','01_cutscenes_neighbors','01_map_whitespace',
-					'02_cutscenes_hideandseek','02_cutscenes_lostball','02_map_neighborsroom',
-					'03_cutscenes_basil','04_cutscenes_blackletters','05_cutscenes_spaceboyfriend',
-					'06_cutscenes_junkyard','07_cutscenes_spaceexboyfriend','08_cutscenes_captspaceboy',
-					'09_cutscenes_hobbeez','10_cutscenes_fakeknifefight','11_cutscenes_stolenalbum_pt1',
-					'12_cutscenes_stolenalbum_pt2','13_cutscenes_dinneratbasils','14_cutscenes_sweetheartquest',
-					'15_cutscenes_herothebachelor','16_cutscenes_thewedding','17_cutscenes_pollysworry',
-					'18_cutscenes_secretlake','19_cutscenes_kelshouse','20_cutscenes_sleepover',
-					'21_cutscenes_lastresort','22_cutscenes_humphrey','23_cutscenes_slimegirls',
-					'24_cutscenes_finalboss','25_cutscenes_blackhole','26_cutscenes_aubrey',
-					'27_cutscenes_treehouse','28_cutscenes_helpbasil','29_cutscenes_basilsplea',
-					'album','album_test','art_sculpture','basils_deathtrap','basils_finalmemories',
-					'basils_memories','basils_path','battle_book','bestiary','black_space_flavor_text',
-					'black_space_rev','blackjack_minigame','blackspace_intro','breaktime_chatter',
-					'bs_basils_shadow','database','dreamworld_extras_blackspace','dreamworld_extras_dinosdig',
-					'dreamworld_extras_doomtomb','dreamworld_extras_misc','dreamworld_extras_objectflavor',
-					'dreamworld_extras_pyrefly','dreamworld_extras_shop','dreamworld_extras_slimegirls',
-					'dreamworld_lost_forest','dreamworld_npc_dialogue','dreamworld_npc_dialogue_forgottenpier',
-					'dreamworld_npc_dialogue_frozenforest','dreamworld_npc_dialogue_lastresort',
-					'dreamworld_npc_dialogue_orangeoasis','dreamworld_npc_dialogue_otherworld',
-					'dreamworld_npc_dialogue_pinwheel','dreamworld_npc_dialogue_playground',
-					'dreamworld_npc_dialogue_pyrefly_doomtomb','dreamworld_npc_dialogue_slimegirls',
-					'dreamworld_npc_dialogue_sproutmole_sweetheart','dreamworld_npc_dialogue_sweetheart',
-					'dreamworld_npc_dialogue_whitespace','dw_boss_rush','dw_flavor_text',
-					'dw_hero_charm','dw_map_of_truth','fa_fridges','fa_map_flavor',
-					'faraway_conditional','faraway_kels_room','faraway_something_about_basil',
-					'farawaytown_day3_friends','farawaytown_dialogue_day1_day',
-					'farawaytown_dialogue_day1_sunset','farawaytown_dialogue_day2_day',
-					'farawaytown_dialogue_day2_sunset','farawaytown_dialogue_day3_day',
-					'farawaytown_dialogue_day3_sunset','farawaytown_dialogue_strangers',
-					'farawaytown_dialogue_tucker','farawaytown_extradialogue',
-					'farawaytown_extras_dailydialogue','farawaytown_extras_endings',
-					'farawaytown_extras_fears','farawaytown_extras_hardwareminigame',
-					'farawaytown_extras_marinight','farawaytown_extras_mavericks',
-					'farawaytown_extras_misc','farawaytown_extras_momsdialogue',
-					'farawaytown_extras_objectflavor','farawaytown_extras_petrock',
-					'farawaytown_extras_pizzaminigame','farawaytown_extras_shop',
-					'farawaytown_extras_supermarketminigame','gacha_minigame','hidden_library',
-					'hide_and_seek','kel_errands','menus','miscellanous_dialogues','new_npcs',
-					'npc_general','party_dialogue','pluto','sidequest_dreamworld_bed',
-					'sidequest_dreamworld_coffeemachine','sidequest_dreamworld_crowfriends',
-					'sidequest_dreamworld_deliversprout','sidequest_dreamworld_demonboy',
-					'sidequest_dreamworld_feedhumphrey','sidequest_dreamworld_fliphim',
-					'sidequest_dreamworld_flowerpuzzle','sidequest_dreamworld_ghostgathering',
-					'sidequest_dreamworld_hector','sidequest_dreamworld_hectorjr',
-					'sidequest_dreamworld_ingredients','sidequest_dreamworld_itch',
-					'sidequest_dreamworld_jash','sidequest_dreamworld_lostrarebear',
-					'sidequest_dreamworld_lostson','sidequest_dreamworld_marina',
-					'sidequest_dreamworld_medusa','sidequest_dreamworld_molly',
-					'sidequest_dreamworld_mush','sidequest_dreamworld_oragne',
-					'sidequest_dreamworld_peanutjelly','sidequest_dreamworld_perfectwind',
-					'sidequest_dreamworld_pinkbeard','sidequest_dreamworld_poolnoodle',
-					'sidequest_dreamworld_rabbitkiller','sidequest_dreamworld_recycle',
-					'sidequest_dreamworld_seasons','sidequest_dreamworld_squizzards',
-					'sidequest_dreamworld_stargazing','sidequest_dreamworld_stolen',
-					'sidequest_dreamworld_stoprain','sidequest_dreamworld_tentacle',
-					'sidequest_farawaytown_anniversarychoco','sidequest_farawaytown_anniversarypizza',
-					'sidequest_farawaytown_artist','sidequest_farawaytown_birthdaygift1',
-					'sidequest_farawaytown_birthdaygift2','sidequest_farawaytown_bringangel',
-					'sidequest_farawaytown_brushteeth','sidequest_farawaytown_claus',
-					'sidequest_farawaytown_cooking','sidequest_farawaytown_fixarcademachine',
-					'sidequest_farawaytown_fixpipe','sidequest_farawaytown_flower',
-					'sidequest_farawaytown_forgotmeat','sidequest_farawaytown_fruitwaradrian',
-					'sidequest_farawaytown_fruitwarbrayden','sidequest_farawaytown_ginohighscore',
-					'sidequest_farawaytown_ginojukebox','sidequest_farawaytown_hobbeezhighscore',
-					'sidequest_farawaytown_jackson','sidequest_farawaytown_lostlucas',
-					'sidequest_farawaytown_medication','sidequest_farawaytown_michaelslunch',
-					'sidequest_farawaytown_michaelthemusician','sidequest_farawaytown_mincy',
-					'sidequest_farawaytown_missingshears','sidequest_farawaytown_mypie',
-					'sidequest_farawaytown_oldhobo','sidequest_farawaytown_pickingpaint',
-					'sidequest_farawaytown_pickupfurniture','sidequest_farawaytown_ringinthesink',
-					'sidequest_farawaytown_seashells','sidequest_farawaytown_shutin',
-					'sidequest_farawaytown_smellyhobo','sidequest_farawaytown_sneakingoutbrent',
-					'sidequest_farawaytown_sneakingoutjoy','sidequest_farawaytown_toiletseat',
-					'sidequest_farawaytown_trashpickup','sidequest_farawaytown_tutorbrent',
-					'sidequest_farawaytown_tutorjoy','sidequest_farawaytown_wherestheremote',
-					'signs','slot_machine_minigame','snaley_tragedy','system','televisions',
-					'test','wtf','xx_battle_text','xx_blue','xx_cutscenes_ems','xx_general',
-					'xx_item_get','xx_map_expansion','xx_mari_locations','xx_melon','xx_ocean',
-					'xx_quest','xx_quest_tracker','xx_skill_get','xx_system','xx_tagreject',
-					'xx_tombstones'
-				];
+				var yaml;
+				try { yaml = require('./js/libs/js-yaml-master'); } catch(e) {
+					console.warn('LanguageManager: require(js-yaml) failed, falling back to filesystem');
+					useZip = false;
+				}
+			}
+			
+			if (useZip) {
+				// Use the polyfill's readdirSync to get the expected (capitalized)
+				// filenames that the game code expects as lookup keys. The
+				// ZipLoader VFS does case-insensitive file resolution, so
+				// requesting XX_BLUE.yaml will find xx_blue.yaml in the zip.
+				var _fs = require('fs');
+				var _folder = 'languages/' + language + '/';
+				var _dirList = [];
+				try {
+					_dirList = _fs.readdirSync(_folder) || [];
+				} catch(e) {
+					// If readdirSync fails, try the legacy path
+					try { _dirList = _fs.readdirSync('Languages/' + language + '/') || []; } catch(e2) {}
+				}
+				var yamlFiles = _dirList.filter(function(f) { return f.endsWith('.yaml'); });
+				
 				console.log('Loading ' + yamlFiles.length + ' language files for ' + language + ' from ZipLoader VFS');
 				for (var i = 0; i < yamlFiles.length; i++) {
-					var filename = yamlFiles[i];
-					var filePath = 'languages/' + language + '/' + filename + '.yaml';
+					var file = yamlFiles[i];
+					var filename = file.replace('.yaml', '');
+					var filePath = 'languages/' + language + '/' + file;
 					try {
 						var data = window.ZipLoader.getText(filePath);
 						if (data) {
@@ -3328,15 +3285,28 @@ Gamefall.Encryption = Gamefall.Encryption || {};
 			}
 			
 			// Fallback: filesystem-based loading (NW.js / Node.js)
-			var yaml = require('./js/libs/js-yaml-master');
-			var fs = require('fs');
+			var yaml, fs;
+			try {
+				yaml = require('./js/libs/js-yaml-master');
+				fs = require('fs');
+			} catch(e) {
+				console.warn('LanguageManager: require failed (not in Node.js mode), language data will be unavailable until ZipLoader is ready');
+				return;
+			}
 			
-			var folder = '/Languages/' + language + '/';
+			var folder = 'languages/' + language + '/';
 			var dirList = [];
 			try {
 				dirList = fs.readdirSync(folder) || [];
 			} catch(e) {
-				console.warn('readdirSync failed, falling back to static list');
+				// Try uppercase path (legacy)
+				try {
+					folder = 'Languages/' + language + '/';
+					dirList = fs.readdirSync(folder) || [];
+				} catch(e2) {
+					console.warn('readdirSync failed for both paths, language data unavailable');
+					return;
+				}
 			}
 			
 			var yamlFiles = dirList.filter(function(f) { return f.endsWith('.yaml'); });
