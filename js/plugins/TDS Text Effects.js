@@ -497,8 +497,8 @@ Window_Base.prototype.createLetterEffectSprite = function(textState) {
   var w = Math.round(this.textWidth(c));
   // If Character Is empty
   if (c === ' ') { return; }
-  // Create Bitmap (w+16 gives 8px padding each side to prevent glyph clipping) omfg just WORK
-    var bitmap = new Bitmap(w + 16, textState.height + 10);
+  // Create Bitmap (w+32 gives 16px padding each side to prevent glyph clipping) omfg just WORK
+    var bitmap = new Bitmap(w + 32, textState.height + 10);
   // Copy Bitmap Settings
   bitmap.fontFace = this.contents.fontFace;
   bitmap.fontSize = this.contents.fontSize;
