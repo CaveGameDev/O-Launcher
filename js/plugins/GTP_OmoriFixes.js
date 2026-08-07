@@ -120,6 +120,7 @@ Gamefall.OmoriFixes = Gamefall.OmoriFixes || {};
 
 	const _old_drawText = Bitmap.prototype.drawText;
 	Bitmap.prototype.drawText = function(text, x, y, maxWidth, lineHeight, align) {
+	    if (this._blockTextDrawing) { return; }
 	    if (text !== undefined) {
 	        var tx = x;
 	        var ty = y + lineHeight - (lineHeight - this.fontSize * 0.8) / 2;
