@@ -164,6 +164,18 @@ Gamefall.OmoriFixes = Gamefall.OmoriFixes || {};
 
 	//###############################################################################
 	//
+	// BROWSER FIX: Window padding/contents offset sync
+	// Many OMORI windows override standardPadding() (e.g. return 4) but the
+	// Window._refreshContents method positions the contents sprite using
+	// this.padding (always 18). This desync shifts all text 14px right+down.
+	// Fix: use standardPadding() for the contents sprite position instead.
+
+	Window.prototype._refreshContents = function() {
+		this._windowContentsSprite.move(this.standardPadding(), this.standardPadding());
+	};
+
+	//###############################################################################
+	//
 	// 12/08 GAMEPAD SELECTION FIX
 	//
 	//###############################################################################
