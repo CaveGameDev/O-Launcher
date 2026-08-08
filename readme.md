@@ -1,6 +1,6 @@
 # OMORI — Browser Port
 
-A fully client-side browser port of the RPG Maker MV game **OMORI**. No server, no builds, no installs — just open `index.html` and play.
+A full browser port of the RPG Maker MV game **OMORI**. just server, no builds, no installs — just open `index.html` and play.
 
 Everything that relied on NW.js (the original desktop shell) has been polyfilled or reimplemented so the game runs natively in any modern browser. Saves persist to IndexedDB, assets stream from a split ZIP archive, and mobile devices get a full set of on-screen controls.
 
