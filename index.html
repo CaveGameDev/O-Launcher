@@ -852,6 +852,13 @@
     (function() {
         'use strict';
 
+        // Bail out entirely if this is not a touch device —
+        // no DOM setup, no event listeners, nothing.
+        var hasTouch = ('ontouchstart' in window) ||
+                       (navigator.maxTouchPoints > 0) ||
+                       (navigator.msMaxTouchPoints > 0);
+        if (!hasTouch) return;
+
         // ============================================================
         // 8a. FULLSCREEN STRETCH PATCH
         // ============================================================
@@ -1083,7 +1090,6 @@
                 rightPanel.style.display = '';
                 rightPanel.style.flexDirection = 'column';
             } else if (bottomBarHeight >= 140) {
-                // Bottom bar layout: everything at the bottom
                 controlsEl.style.flexDirection = 'row';
                 controlsEl.style.justifyContent = 'space-between';
                 controlsEl.style.alignItems = 'flex-end';
@@ -1113,7 +1119,7 @@
             setTimeout(repositionControls, 300);
         });
 
-        // Initial positioning — retry until canvas exists
+        // Initial positioning, retry until canvas exists
         var _posRetries = 0;
         var _posTimer = setInterval(function() {
             _posRetries++;
