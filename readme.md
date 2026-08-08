@@ -153,12 +153,6 @@ The project includes about 150 plugins, the full set from the original OMORI:
 
 **Battle:** Full OMORI battle system (emotion-based, no traditional HP bars), Yanfly Battle Engine Core, action sequences, counter control, critical control, taunt, lifesteal
 
-**Menu and UI:** Custom main menu, item/skill/equip scenes, save/load with screenshots, photo album, bestiary, quest log, black letter (hangman) puzzle, title screen, options menu with full key rebinding
-
-**Map:** Camera control, weather effects, fog, parallax pictures, footprints, follower control, event detectors, QTE sequences
-
-**Minigames:** Blackjack, hardware shop, home alone, jukebox, pet rocks, pizza delivery, snake, space invaders, slot machine, gacha
-
 **Audio and Video:** Streaming audio, OGG-only mode, video player
 
 **Text and Message:** Yanfly Message Core with extended message packs, language processing system with localization support
@@ -183,8 +177,8 @@ The project includes about 150 plugins, the full set from the original OMORI:
 - **Not all video formats** may play in all browsers. The original game uses WebM; Safari may need additional handling.
 - **Localization** works for English. Other language packs may need their ZIP archives placed in the project root.
 - **Performance** on low-end mobile devices varies. The game runs at 640x480 but some battle scenes with heavy sprite usage can stress older GPUs.
-- **Multiplayer and Steam features** are naturally absent. The Steam key is hardcoded so the game does not error on startup.
 - **File protocol** will not work due to XHR and ZIP loading requirements. Always serve over HTTP.
+- **Possible Bugs** all throughout, primarily language error, just report them to me
 
 ---
 
