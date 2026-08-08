@@ -660,7 +660,7 @@
             top: 0; left: 0; right: 0; bottom: 0;
             z-index: 2147483645;
             pointer-events: none;
-            display: flex;
+            display: none;  /* hidden until mobile JS enables */
             justify-content: space-between;
             align-items: center;
             box-sizing: border-box;
@@ -811,15 +811,11 @@
             -webkit-backdrop-filter: blur(4px);
             color: rgba(255,255,255,0.8);
             font-size: 16px;
-            display: flex;
+            display: none;  /* hidden until mobile JS enables */
             align-items: center;
             justify-content: center;
             cursor: pointer;
             touch-action: manipulation;
-        }
-        @media (hover: hover) and (pointer: fine) {
-            #mobileControls { display: none; }
-            #mctrlToggle    { display: none; }
         }
     </style>
     <button id="mctrlToggle" type="button" title="Hide mobile controls">🎮</button>
@@ -847,24 +843,33 @@
                 <button class="mctrl-btn mctrl-action"    id="mctrlBtnShift" type="button">RUN</button>
             </div>
         </div>
-    </div>
-    <script>
+    </div>    <script>
     (function() {
         'use strict';
 
-        // Bail out entirely if this is not a touch device —
-        // no DOM setup, no event listeners, nothing.
-        var hasTouch = ('ontouchstart' in window) ||
-                       (navigator.maxTouchPoints > 0) ||
-                       (navigator.msMaxTouchPoints > 0);
-        if (!hasTouch) return;
+        // ---- Reliable mobile detection ----
+        var ua = navigator.userAgent || '';
+        var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+        var hasTouch = isMobile ||
+                       (('ontouchstart' in window) && (navigator.maxTouchPoints > 0));
 
         // ============================================================
-        // 8a. FULLSCREEN STRETCH PATCH
+        // 8a. FULLSCREEN STRETCH + UPSCALE (runs on ALL devices)
         // ============================================================
-        // When entering fullscreen, enable stretch so the canvas fills
-        // the screen.  When exiting, restore whatever was in effect.
         var _stretchBeforeFullscreen = null;
+
+        function applyCanvasUpscale(isFs) {
+            var canvas = document.getElementById('GameCanvas');
+            if (!canvas) return;
+            if (isFs) {
+                // Smooth filtering in fullscreen for a cleaner upscale
+                canvas.style.imageRendering = 'auto';
+                canvas.style.transition = 'width 0.15s ease, height 0.15s ease';
+            } else {
+                canvas.style.imageRendering = '';
+                canvas.style.transition = '';
+            }
+        }
 
         function onFullscreenChange() {
             var isFs = !!(document.fullscreenElement ||
@@ -873,22 +878,21 @@
             if (!window.Graphics) return;
 
             if (isFs) {
-                // Entering fullscreen — save current stretch and enable
                 if (_stretchBeforeFullscreen === null) {
                     _stretchBeforeFullscreen = Graphics._stretchEnabled;
                 }
                 Graphics._stretchEnabled = true;
             } else {
-                // Exiting fullscreen — restore previous stretch mode
                 if (_stretchBeforeFullscreen !== null) {
                     Graphics._stretchEnabled = _stretchBeforeFullscreen;
                     _stretchBeforeFullscreen = null;
                 }
             }
             Graphics._updateAllElements();
-            // Reposition mobile controls after the canvas settles
+            applyCanvasUpscale(isFs);
+
             if (typeof repositionControls === 'function') {
-                setTimeout(repositionControls, 50);
+                setTimeout(repositionControls, 80);
             }
         }
 
@@ -896,8 +900,7 @@
         document.addEventListener('webkitfullscreenchange', onFullscreenChange);
         document.addEventListener('msfullscreenchange', onFullscreenChange);
 
-        // Also patch F4 / the game's fullscreen toggle so it's seamless.
-        // We hook the existing _switchFullScreen to also handle stretch.
+        // Patch F4 / the game's fullscreen toggle
         var _origSwitchFullScreen = null;
         function patchGraphicsFS() {
             if (!window.Graphics || !Graphics._switchFullScreen) return;
@@ -907,9 +910,7 @@
         }
         function patchedSwitch() {
             _origSwitchFullScreen.apply(this, arguments);
-            // The fullscreenchange event will fire and handle stretch.
         }
-        // Retry patching until Graphics is available
         var _fsPatchTries = 0;
         var _fsPatchTimer = setInterval(function() {
             _fsPatchTries++;
@@ -918,16 +919,17 @@
         }, 100);
 
         // ============================================================
-        // 8b. MOBILE LANDSCAPE ORIENTATION LOCK
+        // 8b. MOBILE-ONLY SECTIONS (landscape lock + controls)
         // ============================================================
+        if (!hasTouch) return;
+
+        // ---- 8b-i. LANDSCAPE ORIENTATION LOCK ----
         (function() {
-            if (!('ontouchstart' in window) && !navigator.maxTouchPoints) return;
             try {
                 if (screen.orientation && screen.orientation.lock) {
                     screen.orientation.lock('landscape').catch(function() {});
                 }
             } catch(_) {}
-            // Fallback: listen for orientation changes and prompt
             function onOrientChange() {
                 try {
                     if (screen.orientation && screen.orientation.lock) {
@@ -938,27 +940,23 @@
             screen.orientation && screen.orientation.addEventListener('change', onOrientChange);
         })();
 
-        // ============================================================
-        // 8c. MOBILE CONTROLS — POSITIONED IN SIDEBARS
-        // ============================================================
+        // ---- 8b-ii. SHOW MOBILE CONTROLS ----
         var controlsEl   = document.getElementById('mobileControls');
+        var toggleEl     = document.getElementById('mctrlToggle');
+        if (controlsEl) controlsEl.style.display = 'flex';
+        if (toggleEl)   toggleEl.style.display   = 'flex';
+
         var leftPanel    = document.getElementById('mctrlLeftPanel');
         var rightPanel   = document.getElementById('mctrlRightPanel');
-        var toggleEl     = document.getElementById('mctrlToggle');
         var controlsVisible = true;
 
-        // ---- Button -> keyCode map ----
+        // Button -> keyCode map
         var btnMap = {
-            mctrlDpadUp:    38,  // up arrow
-            mctrlDpadDown:  40,  // down arrow
-            mctrlDpadLeft:  37,  // left arrow
-            mctrlDpadRight: 39,  // right arrow
-            mctrlBtnZ:      90,  // Z  → ok / confirm
-            mctrlBtnX:      88,  // X  → escape / cancel
-            mctrlBtnShift:  16,  // Shift → run
-            mctrlBtnQ:      81,  // Q  → pageup / LB
-            mctrlBtnW:      87,  // W  → pagedown / RB
-            mctrlBtnA:      65   // A  → tag
+            mctrlDpadUp:    38,  mctrlDpadDown:  40,
+            mctrlDpadLeft:  37,  mctrlDpadRight: 39,
+            mctrlBtnZ:      90,  mctrlBtnX:      88,
+            mctrlBtnShift:  16,  mctrlBtnQ:      81,
+            mctrlBtnW:      87,  mctrlBtnA:      65
         };
 
         var heldKeys = {};
@@ -1000,7 +998,7 @@
             else    { el.classList.remove('pressed'); }
         }
 
-        // ---- Attach pointer events to every control button ----
+        // Attach pointer events to every control button
         Object.keys(btnMap).forEach(function(id) {
             var el = document.getElementById(id);
             if (!el) return;
@@ -1035,7 +1033,6 @@
             });
         });
 
-        // ---- Release all held keys ----
         function releaseAll() {
             Object.keys(heldKeys).forEach(function(c) {
                 var code = +c;
@@ -1054,7 +1051,7 @@
             });
         }
 
-        // ---- Dynamically position controls in the sidebars ----
+        // Dynamically position controls in the sidebars
         function repositionControls() {
             if (!controlsVisible) return;
 
@@ -1065,20 +1062,15 @@
             var vw = window.innerWidth;
             var vh = window.innerHeight;
 
-            // Left sidebar: space to the left of the canvas
-            var leftBarWidth = cRect.left;
-            // Right sidebar: space to the right of the canvas
+            var leftBarWidth  = cRect.left;
             var rightBarWidth = vw - cRect.right;
-            // Bottom bar: space below the canvas
             var bottomBarHeight = vh - cRect.bottom;
 
             var dpadSize = 150;
             var btnAreaWidth = 120;
-            var minSidebar = 60;  // minimum width to show controls
+            var minSidebar = 60;
 
-            // Decide layout: prefer sidebars, fall back to bottom bar
             if (leftBarWidth >= minSidebar && rightBarWidth >= btnAreaWidth) {
-                // Sidebar layout: D-pad left, buttons right
                 controlsEl.style.flexDirection = 'row';
                 controlsEl.style.justifyContent = 'space-between';
                 controlsEl.style.alignItems = 'center';
@@ -1101,17 +1093,14 @@
                 rightPanel.style.display = '';
                 rightPanel.style.flexDirection = 'column';
             } else {
-                // Not enough room — hide controls
                 controlsEl.style.display = 'none';
                 return;
             }
             controlsEl.style.display = 'flex';
         }
 
-        // Expose globally so the FS handler can call it
         window.repositionControls = repositionControls;
 
-        // Reposition on resize and orientation change
         window.addEventListener('resize', function() {
             setTimeout(repositionControls, 80);
         });
@@ -1119,7 +1108,6 @@
             setTimeout(repositionControls, 300);
         });
 
-        // Initial positioning, retry until canvas exists
         var _posRetries = 0;
         var _posTimer = setInterval(function() {
             _posRetries++;
@@ -1129,7 +1117,6 @@
             }
         }, 100);
 
-        // ---- Toggle visibility ----
         toggleEl.addEventListener('pointerdown', function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -1143,10 +1130,11 @@
             }
         });
 
-        // ---- Release all held keys on page hide ----
         window.addEventListener('pagehide', releaseAll);
     })();
     </script>
+
+
 
 </body>
 </html>
