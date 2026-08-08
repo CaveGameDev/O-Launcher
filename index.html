@@ -651,5 +651,340 @@
     <script type="text/javascript" src="js/plugins.js"></script>
     <script type="text/javascript" src="js/main.js"></script>
     
+    <!-- ============================================================ -->
+    <!-- 8. MOBILE CONTROLS -->
+    <!-- ============================================================ -->
+    <style>
+        #mobileControls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 0;
+            z-index: 2147483645;
+            pointer-events: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 16px 24px 16px;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            touch-action: manipulation;
+        }
+        .mctrl-btn {
+            pointer-events: auto;
+            border: 2px solid rgba(255,255,255,0.35);
+            border-radius: 12px;
+            background: rgba(20,20,30,0.55);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            color: rgba(255,255,255,0.85);
+            font-family: 'GameFont', monospace, sans-serif;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.08s, transform 0.08s;
+        }
+        .mctrl-btn:active,
+        .mctrl-btn.pressed {
+            background: rgba(255,255,255,0.25);
+            border-color: rgba(255,255,255,0.6);
+            transform: scale(0.93);
+        }
+        #mctrlDpad {
+            pointer-events: auto;
+            position: relative;
+            width: 150px;
+            height: 150px;
+            flex-shrink: 0;
+        }
+        .mctrl-dpad-btn {
+            position: absolute;
+            width: 46px;
+            height: 46px;
+            border: 2px solid rgba(255,255,255,0.35);
+            border-radius: 10px;
+            background: rgba(20,20,30,0.55);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            color: rgba(255,255,255,0.7);
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.08s, transform 0.08s;
+            touch-action: manipulation;
+        }
+        .mctrl-dpad-btn:active,
+        .mctrl-dpad-btn.pressed {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.65);
+            transform: scale(0.9);
+        }
+        #mctrlDpadUp    { top: 0;   left: 52px; }
+        #mctrlDpadDown  { bottom: 0; left: 52px; }
+        #mctrlDpadLeft  { top: 52px; left: 0; }
+        #mctrlDpadRight { top: 52px; right: 0; }
+        #mctrlDpadCenter {
+            position: absolute;
+            top: 52px; left: 52px;
+            width: 46px; height: 46px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            pointer-events: none;
+        }
+        #mctrlActionBtns {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+            pointer-events: auto;
+        }
+        #mctrlActionTop {
+            display: flex;
+            gap: 8px;
+        }
+        #mctrlActionBottom {
+            display: flex;
+            gap: 8px;
+        }
+        .mctrl-action {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .mctrl-action-sm {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            font-size: 13px;
+        }
+        #mctrlBtnZ {
+            background: rgba(80,60,180,0.55);
+            border-color: rgba(160,140,255,0.5);
+        }
+        #mctrlBtnZ:active, #mctrlBtnZ.pressed {
+            background: rgba(140,110,255,0.4);
+            border-color: rgba(180,160,255,0.8);
+        }
+        #mctrlBtnX {
+            background: rgba(180,50,50,0.5);
+            border-color: rgba(255,120,120,0.5);
+        }
+        #mctrlBtnX:active, #mctrlBtnX.pressed {
+            background: rgba(240,80,80,0.45);
+            border-color: rgba(255,150,150,0.8);
+        }
+        #mctrlBtnShift {
+            font-size: 12px;
+            background: rgba(50,120,50,0.5);
+            border-color: rgba(100,200,100,0.5);
+        }
+        #mctrlBtnShift:active, #mctrlBtnShift.pressed {
+            background: rgba(80,180,80,0.45);
+            border-color: rgba(140,240,140,0.8);
+        }
+        #mctrlToggle {
+            position: fixed;
+            top: 8px;
+            right: 8px;
+            z-index: 2147483647;
+            pointer-events: auto;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.35);
+            background: rgba(20,20,30,0.6);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            color: rgba(255,255,255,0.8);
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            #mobileControls { display: none; }
+            #mctrlToggle    { display: none; }
+        }
+    </style>
+    <button id="mctrlToggle" type="button" title="Hide mobile controls">🎮</button>
+    <div id="mobileControls">
+        <div id="mctrlDpad">
+            <button class="mctrl-dpad-btn" id="mctrlDpadUp"    type="button">▲</button>
+            <button class="mctrl-dpad-btn" id="mctrlDpadDown"  type="button">▼</button>
+            <button class="mctrl-dpad-btn" id="mctrlDpadLeft"  type="button">◀</button>
+            <button class="mctrl-dpad-btn" id="mctrlDpadRight" type="button">▶</button>
+            <div id="mctrlDpadCenter"></div>
+        </div>
+        <div id="mctrlActionBtns">
+            <div id="mctrlActionTop">
+                <button class="mctrl-btn mctrl-action-sm" id="mctrlBtnQ" type="button">Q</button>
+                <button class="mctrl-btn mctrl-action-sm" id="mctrlBtnW" type="button">W</button>
+            </div>
+            <div id="mctrlActionBottom">
+                <button class="mctrl-btn mctrl-action-sm" id="mctrlBtnA" type="button">A</button>
+                <button class="mctrl-btn mctrl-action"    id="mctrlBtnShift" type="button">RUN</button>
+                <button class="mctrl-btn mctrl-action"    id="mctrlBtnZ"     type="button">Z</button>
+                <button class="mctrl-btn mctrl-action"    id="mctrlBtnX"     type="button">X</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    (function() {
+        'use strict';
+
+        var controlsEl = document.getElementById('mobileControls');
+        var toggleEl   = document.getElementById('mctrlToggle');
+        var controlsVisible = true;
+
+        // ---- Button -> keyCode map ----
+        var btnMap = {
+            mctrlDpadUp:    38,  // up arrow
+            mctrlDpadDown:  40,  // down arrow
+            mctrlDpadLeft:  37,  // left arrow
+            mctrlDpadRight: 39,  // right arrow
+            mctrlBtnZ:      90,  // Z  → ok / confirm
+            mctrlBtnX:      88,  // X  → escape / cancel
+            mctrlBtnShift:  16,  // Shift → run
+            mctrlBtnQ:      81,  // Q  → pageup / LB
+            mctrlBtnW:      87,  // W  → pagedown / RB
+            mctrlBtnA:      65   // A  → tag
+        };
+
+        // Track which keys are currently held so we don't re-fire keydown
+        // while a button is pressed (the engine polls Input._currentState).
+        var heldKeys = {};
+
+        function fireKey(elId, type) {
+            var code = btnMap[elId];
+            if (code == null) return;
+
+            if (type === 'keydown') {
+                if (heldKeys[code]) return;  // already down
+                heldKeys[code] = true;
+            } else {
+                if (!heldKeys[code]) return; // wasn't down
+                heldKeys[code] = false;
+            }
+
+            // Build a synthetic KeyboardEvent.  The 'keyCode' init property
+            // is not standard across browsers, so we always force it via
+            // Object.defineProperty on the created event.
+            var ev;
+            try {
+                ev = new KeyboardEvent(type, {
+                    bubbles: true,
+                    cancelable: true
+                });
+            } catch(e) {
+                ev = document.createEvent('KeyboardEvent');
+                if (ev.initKeyboardEvent) {
+                    ev.initKeyboardEvent(type, true, true, window, '', 0, '', false, '');
+                } else if (ev.initKeyEvent) {
+                    ev.initKeyEvent(type, true, true, window, false, false, false, false, code, 0);
+                }
+            }
+
+            // Override keyCode and which — the game's Input handler reads
+            // event.keyCode directly.  These are normally readonly but
+            // Object.defineProperty can shadow them.
+            try {
+                Object.defineProperty(ev, 'keyCode', { get: function() { return code; } });
+                Object.defineProperty(ev, 'which',  { get: function() { return code; } });
+            } catch(_) { /* silent — property already set */ }
+
+            document.dispatchEvent(ev);
+        }
+
+        function markPressed(el, on) {
+            if (on) { el.classList.add('pressed'); }
+            else    { el.classList.remove('pressed'); }
+        }
+
+        // ---- Attach pointer events to every control button ----
+        Object.keys(btnMap).forEach(function(id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+
+            el.addEventListener('pointerdown', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                el.setPointerCapture(e.pointerId);
+                markPressed(el, true);
+                fireKey(id, 'keydown');
+            });
+
+            el.addEventListener('pointerup', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                markPressed(el, false);
+                fireKey(id, 'keyup');
+            });
+
+            el.addEventListener('pointerleave', function(e) {
+                markPressed(el, false);
+                fireKey(id, 'keyup');
+            });
+
+            el.addEventListener('pointercancel', function(e) {
+                markPressed(el, false);
+                fireKey(id, 'keyup');
+            });
+
+            // Prevent context menu on long-press
+            el.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+            });
+        });
+
+        // ---- Release all held keys (e.g. on toggle or page hide) ----
+        function releaseAll() {
+            Object.keys(heldKeys).forEach(function(c) {
+                var code = +c;
+                if (!heldKeys[code]) return;
+                heldKeys[code] = false;
+                try {
+                    var ev = new KeyboardEvent('keyup', { bubbles: true, cancelable: true });
+                    Object.defineProperty(ev, 'keyCode', { get: function() { return code; } });
+                    Object.defineProperty(ev, 'which',  { get: function() { return code; } });
+                    document.dispatchEvent(ev);
+                } catch(_) {}
+            });
+            // Also remove visual pressed state from all buttons
+            Object.keys(btnMap).forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) markPressed(el, false);
+            });
+        }
+
+        // ---- Toggle visibility ----
+        toggleEl.addEventListener('pointerdown', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            controlsVisible = !controlsVisible;
+            controlsEl.style.display = controlsVisible ? 'flex' : 'none';
+            toggleEl.textContent = controlsVisible ? '🎮' : '👁';
+            if (!controlsVisible) releaseAll();
+        });
+
+        // ---- Release all held keys on page hide ----
+        window.addEventListener('pagehide', releaseAll);
+
+        // ---- Force-show controls if the device has a touchscreen ----
+        // (The CSS @media rule hides them on mouse-only desktops.)
+    })();
+    </script>
+
 </body>
 </html>
