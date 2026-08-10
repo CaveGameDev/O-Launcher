@@ -1,0 +1,729 @@
+{
+  "version": "1",
+  "archives": {
+    "img_repk.zip": {
+      "folder": "img_pack",
+      "count": 57,
+      "pad": 2,
+      "totalSize": 536236444,
+      "parts": [
+        {
+          "name": "img_repk.zip.part01",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part02",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part03",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part04",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part05",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part06",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part07",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part08",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part09",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part10",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part11",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part12",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part13",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part14",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part15",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part16",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part17",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part18",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part19",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part20",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part21",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part22",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part23",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part24",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part25",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part26",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part27",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part28",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part29",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part30",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part31",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part32",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part33",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part34",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part35",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part36",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part37",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part38",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part39",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part40",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part41",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part42",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part43",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part44",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part45",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part46",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part47",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part48",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part49",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part50",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part51",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part52",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part53",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part54",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part55",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part56",
+          "size": 9437184
+        },
+        {
+          "name": "img_repk.zip.part57",
+          "size": 7754140
+        }
+      ]
+    },
+    "audio_repk.zip": {
+      "folder": "aud_pack",
+      "count": 111,
+      "pad": 3,
+      "totalSize": 1071008914,
+      "parts": [
+        {
+          "name": "audio_repk.zip.part001",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part002",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part003",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part004",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part005",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part006",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part007",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part008",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part009",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part010",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part011",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part012",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part013",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part014",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part015",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part016",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part017",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part018",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part019",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part020",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part021",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part022",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part023",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part024",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part025",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part026",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part027",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part028",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part029",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part030",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part031",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part032",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part033",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part034",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part035",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part036",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part037",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part038",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part039",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part040",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part041",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part042",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part043",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part044",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part045",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part046",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part047",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part048",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part049",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part050",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part051",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part052",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part053",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part054",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part055",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part056",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part057",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part058",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part059",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part060",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part061",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part062",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part063",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part064",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part065",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part066",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part067",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part068",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part069",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part070",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part071",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part072",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part073",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part074",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part075",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part076",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part077",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part078",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part079",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part080",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part081",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part082",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part083",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part084",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part085",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part086",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part087",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part088",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part089",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part090",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part091",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part092",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part093",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part094",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part095",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part096",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part097",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part098",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part099",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part100",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part101",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part102",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part103",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part104",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part105",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part106",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part107",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part108",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part109",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part110",
+          "size": 9648729
+        },
+        {
+          "name": "audio_repk.zip.part111",
+          "size": 9648724
+        }
+      ]
+    },
+    "data.zip": {
+      "folder": "",
+      "count": 1,
+      "pad": 0,
+      "totalSize": 2922077,
+      "parts": [
+        {
+          "name": "data.zip",
+          "size": 2922077
+        }
+      ]
+    },
+    "maps.zip": {
+      "folder": "",
+      "count": 1,
+      "pad": 0,
+      "totalSize": 1402681,
+      "parts": [
+        {
+          "name": "maps.zip",
+          "size": 1402681
+        }
+      ]
+    },
+    "languages.zip": {
+      "folder": "",
+      "count": 1,
+      "pad": 0,
+      "totalSize": 646183,
+      "parts": [
+        {
+          "name": "languages.zip",
+          "size": 646183
+        }
+      ]
+    }
+  }
+}
