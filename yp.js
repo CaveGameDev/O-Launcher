@@ -1,14 +1,12 @@
-    (function() {
+//Simply put, CDN path call patches because I'm lazy asf :>
+(function() {
         'use strict';
         
         var CDN_BASE = 'https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/';
         window.__CDN_BASE = CDN_BASE;
         
-        // ----- 3a. Remove duplicate "aud_pack/" or "img_pack/" segments -----
         function removeDuplicatePackPaths(url) {
             if (typeof url !== 'string') return url;
-            // Matches "aud_pack/aud_pack/" or "img_pack/img_pack/" (case‑insensitive)
-            // and replaces with a single folder name.
             var regex = /(aud_pack|img_pack)\/\1\//gi;
             var previous;
             do {
@@ -28,20 +26,17 @@
 
         function rewriteToCDN(url) {
             if (!url || typeof url !== 'string') return url;
-            // Skip absolute / data / blob URLs
+
             if (/^(https?:)?\/\//i.test(url)) return url;
             if (/^data:/i.test(url)) return url;
-            if (/^blob:/i.test(url)) return url;
-            
+            if (/^blob:/i.test(url)) return url;        
             var p = url.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '');
-            // Rewrite known asset paths to CDN
             if (p.indexOf('movies/') === 0 || p.indexOf('fonts/') === 0 || p.indexOf('js/') === 0 || p === 'fflate.js') {
                 return CDN_BASE + p;
             }
             return url;
         }
-        
-        // Apply duplicate path removal to all URL rewriting
+
         window.stripSdcardPath = function(path) {
             return removeDuplicatePackPaths(stripSdcardPath(path));
         };
@@ -49,7 +44,6 @@
             return removeDuplicatePackPaths(rewriteToCDN(url));
         };
 
-        // ----- 3b. Intercept XHR -----
         var origXHROpen = XMLHttpRequest.prototype.open;
         XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
             if (typeof url === 'string') {
@@ -59,7 +53,6 @@
             return origXHROpen.call(this, method, url, async !== false, user, password);
         };
 
-        // ----- 3c. Intercept fetch() -----
         if (typeof window.fetch !== 'undefined') {
             var origFetch = window.fetch;
             window.fetch = function(input, init) {
@@ -83,8 +76,6 @@
                 return origFetch.call(this, input, init);
             };
         }
-
-        // ----- 3d. Intercept dynamic <script> src -----
         var origSrcDesc = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src');
         if (origSrcDesc && origSrcDesc.set) {
             Object.defineProperty(HTMLScriptElement.prototype, 'src', {
