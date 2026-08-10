@@ -2,7 +2,7 @@
 (function() {
         'use strict';
         
-        var CDN_BASE = 'https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/';
+        var CDN_BASE = '';
         window.__CDN_BASE = CDN_BASE;
         
         function removeDuplicatePackPaths(url) {
