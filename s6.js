@@ -24,7 +24,6 @@
                         window.ZipLoader.hasLanguagePack()) {
                         return '';
                     }
-                    // Redirect CDN assets
                     urlPath = window.rewriteToCDN ? window.rewriteToCDN(urlPath) : urlPath;
                     const xhr = new XMLHttpRequest();
                     xhr.open('GET', urlPath, false);
@@ -108,7 +107,7 @@
                 }
                 if (cleanMod === 'path') {
                     return {
-                        // FIX: Boolean.join → Boolean).join
+                        // FIX: Boolean).join
                         join: (...args) => args.filter(Boolean).join('/').replace(/\/+/g, '/'),
                         dirname: (p) => p.split('/').slice(0, -1).join('/') || '.'
                     };
@@ -132,9 +131,6 @@
                         if (val === '' || val === 'null' || val === '~') return undefined;
                         if (val === 'true') return true;
                         if (val === 'false') return false;
-                        // Flow collection: {key: value, ...} or [item, ...]
-                        // Safe recursive parser (no eval / new Function) so it is
-                        // CSP- and sandbox-friendly.
                         if ((val.startsWith('{') && val.endsWith('}')) ||
                             (val.startsWith('[') && val.endsWith(']'))) {
                             try {
@@ -145,15 +141,12 @@
                         if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) return val.slice(1, -1);
                         return val;
                     }
-                    // --- Safe YAML flow parser (no eval) ---
                     function stripQuotes(s) {
                         if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
                             return s.slice(1, -1);
                         }
                         return s;
                     }
-                    // Split on top-level separators (commas), ignoring nested
-                    // { }, [ ] and quoted segments.
                     function splitFlowLevels(str, pos) {
                         var parts = [];
                         var cur = '';
