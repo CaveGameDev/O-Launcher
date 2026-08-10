@@ -1,0 +1,162 @@
+        #mobileControls {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 2147483645;
+            pointer-events: none;
+            display: none;  /* hidden until mobile JS enables */
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            touch-action: manipulation;
+        }
+        #mctrlLeftPanel {
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        #mctrlRightPanel {
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .mctrl-btn {
+            pointer-events: auto;
+            border: 2px solid rgba(255,255,255,0.35);
+            border-radius: 12px;
+            background: rgba(20,20,30,0.55);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            color: rgba(255,255,255,0.85);
+            font-family: 'GameFont', monospace, sans-serif;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.08s, transform 0.08s;
+        }
+        .mctrl-btn:active,
+        .mctrl-btn.pressed {
+            background: rgba(255,255,255,0.25);
+            border-color: rgba(255,255,255,0.6);
+            transform: scale(0.93);
+        }
+        #mctrlDpad {
+            pointer-events: auto;
+            position: relative;
+            width: 150px;
+            height: 150px;
+            flex-shrink: 0;
+        }
+        .mctrl-dpad-btn {
+            position: absolute;
+            width: 46px;
+            height: 46px;
+            border: 2px solid rgba(255,255,255,0.35);
+            border-radius: 10px;
+            background: rgba(20,20,30,0.55);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            color: rgba(255,255,255,0.7);
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.08s, transform 0.08s;
+            touch-action: manipulation;
+        }
+        .mctrl-dpad-btn:active,
+        .mctrl-dpad-btn.pressed {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.65);
+            transform: scale(0.9);
+        }
+        #mctrlDpadUp    { top: 0;   left: 52px; }
+        #mctrlDpadDown  { bottom: 0; left: 52px; }
+        #mctrlDpadLeft  { top: 52px; left: 0; }
+        #mctrlDpadRight { top: 52px; right: 0; }
+        #mctrlDpadCenter {
+            position: absolute;
+            top: 52px; left: 52px;
+            width: 46px; height: 46px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            pointer-events: none;
+        }
+        #mctrlActionRow {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+        .mctrl-action {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 15px;
+            font-weight: bold;
+        }
+        .mctrl-action-sm {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 12px;
+        }
+        #mctrlBtnZ {
+            background: rgba(80,60,180,0.55);
+            border-color: rgba(160,140,255,0.5);
+        }
+        #mctrlBtnZ:active, #mctrlBtnZ.pressed {
+            background: rgba(140,110,255,0.4);
+            border-color: rgba(180,160,255,0.8);
+        }
+        #mctrlBtnX {
+            background: rgba(180,50,50,0.5);
+            border-color: rgba(255,120,120,0.5);
+        }
+        #mctrlBtnX:active, #mctrlBtnX.pressed {
+            background: rgba(240,80,80,0.45);
+            border-color: rgba(255,150,150,0.8);
+        }
+        #mctrlBtnShift {
+            font-size: 11px;
+            background: rgba(50,120,50,0.5);
+            border-color: rgba(100,200,100,0.5);
+        }
+        #mctrlBtnShift:active, #mctrlBtnShift.pressed {
+            background: rgba(80,180,80,0.45);
+            border-color: rgba(140,240,140,0.8);
+        }
+        #mctrlToggle {
+            position: fixed;
+            top: 8px;
+            left: 8px;
+            z-index: 2147483647;
+            pointer-events: auto;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.35);
+            background: rgba(20,20,30,0.6);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            color: rgba(255,255,255,0.8);
+            font-size: 16px;
+            display: none;  /* hidden until mobile JS enables */
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
