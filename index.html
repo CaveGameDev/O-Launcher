@@ -6,504 +6,250 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="viewport" content="user-scalable=no">
-    <link rel="icon" href="icon/icon.png" type="image/png">
-    <link rel="apple-touch-icon" href="icon/icon.png">
-    <link rel="stylesheet" type="text/css" href="fonts/gamefont.css">
+    <link rel="icon" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/icon/icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/icon/icon.png">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/fonts/gamefont.css">
+    <link rel="stylesheet" type="text/css" href="/styles.css">
+    
+    <!-- Preload ALL plugin .js files FIRST -- plugins.js races to load them instantly -->
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Active Chain Skills.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/AEL_TilesetPropertyRegions.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Aetherflow_PreloadEverything.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Anti Fail Actions.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Archeia_CoreChanges.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Archeia_MessageCodes.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Archeia_Steamworks.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Aries001_AnimationScreenEffects.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Aries003_WeatherControl.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Atlas Loader.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/AudioStreaming.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Battle Commands List.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Character_Movement_Graphics.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Community_Basic.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Custom Battle Action Text.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Custom Picture Controls.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Custom_Character_Rectangles.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Custom_Picture_Controls.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Dev.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/DisableMouse.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Exhydra_FollowerControl.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/External Notes.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Extra_Followers.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/ExtraMovementFrames.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/FilterController.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/FilterControllerBlurPatch.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Follower_Control.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/fuku_EventTremble.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/fuku_testpack.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Gacha.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/GachaBook.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/GALV_AnimatedSplashScreens.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/GALV_CamControl.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/GALV_EventDetectors.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/GALV_MoveRouteExtras.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/GTP_CoreUpdates.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/GTP_OmoriFixes.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/HIME_EnemyReinforcements.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/KEN_PictureBelowChars.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Liquid_EventData.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Liquid_EventIcons.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Map_Character_Tag.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/OggOnly.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Olivia_HorrorEffects.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Olivia_MapDisplayNameCore.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Olivia_SkipCutscene.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Omori BASE.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Omori Battle System.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Omori Bestiary.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Omori BlackLetterMap.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Omori BlackLetterMenu.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Omori Item Shop.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Omori Main Menu - Scene Equip.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Omori Main Menu - Scene Item.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Omori Main Menu - Scene Options.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Omori Main Menu - Scene Skill.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Omori Main Menu.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Omori Map QTE.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Omori Name Input.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Omori Photo Album.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Omori Quest Menu.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Omori Save &amp; Load.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Omori Title Screen.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/OMORI_BattleFormulas.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/PresetAnimations.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/RegionRandomize.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/RotatePictureEx.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/SimpleEventFade.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Sketchbook.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/SlotMachine.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/smart_path_mv.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/SpaghettiCode.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/SRD_WaitOptions.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/stbvorbis_asm.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/stbvorbis_stream_asm.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/stbvorbis_stream.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/stbvorbis.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/TDDP_AnimationCurves.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/TDDP_MovePictureEx.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/TDDP_NoFastForward.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/TDS Footprints.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/TDS Map Fog.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/TDS Parallax Pictures.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/TDS Particles.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/TDS Text Effects.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Text_Language_Processor.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/Text_LanguageProcessor_MissingYAMLCrashPrevent.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/WaitFPS.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YED_SideviewBattler_MIRROR.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YED_SideviewBattler.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YED_Tiled.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_AutoPassiveStates.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_BaseTroopEvents.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_BattleAICore.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_BattleEngineCore.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_BuffsStatesCore.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_CallEvent.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_CoreEngine.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_DamageCore.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_DashToggle.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_Debugger.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_EquipCore.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_EventChasePlayer.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_EventCopier.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_EventEncounterAid.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_EventHitboxResize.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_EventMiniLabel.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_EventMorpher.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_EventProxActivate.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_EventSpawner.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_EventSpriteOffset.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_EventStepAniOpt.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_EventTimerControl.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_ExtraEnemyDrops.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_FootstepSounds.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_ImprovedBattlebacks.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_LifeSteal.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_LoadCustomFonts.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_MessageCore.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_MoveRouteCore.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_RegionBattlebacks.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_RegionEvents.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_RegionRestrictions.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_SaveEventLocations.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_SkillCore.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_SlipperyTiles.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_SmartJump.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_StealSnatch.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_StopMapMovement.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_SwapEnemies.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_Taunt.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_TestPlayAssist.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_UtilityCommonEvents.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_X_ActSeqPack1.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_X_ActSeqPack2.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_X_ActSeqPack3.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_X_AnimatedSVEnemies.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_X_CounterControl.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_X_CriticalControl.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_X_ExtMesPack1.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_X_ExtMesPack2.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_X_ExtMovePack1.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_X_MessageMacros1.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_X_MessageMacros2.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_X_MessageMacros3.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_X_MessageMacros4.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_X_MessageMacros5.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_X_PassiveAuras.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_X_StateCategories.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YEP_Z_PassiveCases.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YIN - Minigame - Blackjack.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YIN - Minigame - HardwareShop.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YIN - Minigame - HomeAlone.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YIN - Minigame - Jukebox.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YIN - Minigame - PetRocks.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YIN - Minigame - PizzaDelivery.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YIN - Minigame - Snake.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YIN - Minigame - SpaceInvaders.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YIN_OmoriFixes.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YSP_VideoPlayer.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/dragonbones/dragonBones.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/dragonbones/dragonBonesPixi.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/fpsmeter.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/greenworks.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/iphone-inline-video.browser.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/lz-string.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/pixi-picture.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/pixi-tilemap.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/pixi.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/trmix.min.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/fflate.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_core.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_managers.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_objects.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_scenes.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_sprites.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_windows.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/zip_loader.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins.js">
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/main.js">
+
     <title>OMORI</title>
 </head>
 
 <body style="background-color: black; overflow: hidden; margin: 0;">
-    
-    <!-- ============================================================ -->
-    <!-- 1. DOM ELEMENTS -->
-    <!-- ============================================================ -->
-    <script>
-        (function() {
-            if (!document.getElementById('consolearea')) {
-                const consolearea = document.createElement('div');
-                consolearea.id = 'consolearea';
-                consolearea.style.display = 'none';
-                document.body.appendChild(consolearea);
-            }
-            if (!document.getElementById('ErrorPrinter')) {
-                const errorPrinter = document.createElement('div');
-                errorPrinter.id = 'ErrorPrinter';
-                errorPrinter.style.display = 'none';
-                document.body.appendChild(errorPrinter);
-            }
-        })();
-    </script>
-    
-    <!-- ============================================================ -->
-    <!-- 2. NW.JS IMPLEMENTATION -->
-    <!-- ============================================================ -->
-    <script>
-        (function() {
-            'use strict';
-            
-            const STEAM_KEY = '6bdb2e585882fbd48826ef9cffd4c511';
-            
-            window.nw = {
-                App: {
-                    argv: ['nw', 'index.html', '--' + STEAM_KEY],
-                    quit: function() { window.close(); },
-                    dataPath: '/home/web/.config/omori',
-                    manifest: { name: 'OMORI', version: '1.0.0', main: 'index.html' },
-                    on: function(event, callback) { 
-                        if (event === 'open' || event === 'ready') setTimeout(callback, 0);
-                        return this;
-                    },
-                    getDataPath: function() { return '/home/web/.config/omori'; },
-                    getManifest: function() { return { name: 'OMORI', version: '1.0.0' }; },
-                    getArgv: function() { return ['nw', 'index.html', '--' + STEAM_KEY]; },
-                    getFullArgv: function() { return ['nw', 'index.html', '--' + STEAM_KEY]; },
-                    clearCache: function() {},
-                    closeAllWindows: function() { window.close(); }
-                },
-                Window: {
-                    get: function() {
-                        return {
-                            showDevTools: function() {},
-                            enterFullscreen: function() { document.documentElement.requestFullscreen?.().catch(() => {}); },
-                            leaveFullscreen: function() { document.exitFullscreen?.().catch(() => {}); },
-                            focus: function() { window.focus(); },
-                            on: function() { return this; },
-                            close: function() { window.close(); },
-                            minimize: function() {},
-                            maximize: function() {},
-                            isFullscreen: function() { return !!document.fullscreenElement; },
-                            setResizable: function() {},
-                            setPosition: function(x, y) { window.moveTo(x, y); },
-                            setSize: function(w, h) { window.resizeTo(w, h); },
-                            show: function() {},
-                            hide: function() {},
-                            reload: function() { window.location.reload(); }
-                        };
-                    }
-                },
-                Shell: {
-                    openExternal: function(url) { window.open(url, '_blank'); }
-                }
-            };
-            
-            window.nw.gui = window.nw;
-            window.gui = window.nw;
-        })();
-    </script>
-    
-    <!-- ============================================================ -->
-    <!-- 3. PATH STRIPPER -->
-    <!-- ============================================================ -->
-    <script>
-        (function() {
-            'use strict';
-            
-            function stripSdcardPath(path) {
-                if (!path || typeof path !== 'string') return path;
-                const prefix = '/sdcard/OMORI/';
-                if (path.startsWith(prefix)) return path.substring(prefix.length);
-                if (path.startsWith('sdcard/OMORI/')) return path.substring(13);
-                return path;
-            }
-            
-            window.stripSdcardPath = stripSdcardPath;
-            
-            const origXHROpen = XMLHttpRequest.prototype.open;
-            XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
-                if (typeof url === 'string') {
-                    url = stripSdcardPath(url);
-                }
-                return origXHROpen.call(this, method, url, async !== false, user, password);
-            };
-        })();
-    </script>
-    
-    <!-- ============================================================ -->
-    <!-- 4. NODE.JS POLYFILL (Buffer & FS for Raw JSONs) -->
-    <!-- ============================================================ -->
-    <script>
-        (function() {
-            'use strict';
-            
-            if (typeof Buffer === 'undefined') {
-                window.Buffer = class Buffer extends Uint8Array {
-                    constructor(data) {
-                        super(typeof data === 'string' ? new TextEncoder().encode(data) : data);
-                    }
-                    static from(data) { return new Uint8Array(typeof data === 'string' ? new TextEncoder().encode(data) : data); }
-                    toString() { return new TextDecoder('utf-8').decode(this); }
-                };
-            }
-            
-            function readFileSyncXHR(path) {
-                try {
-                    let urlPath = path.replace(/\\/g, '/').replace(/^\//, '');
-                    var normalized = urlPath.replace(/^\.\//, '').replace(/^\/+/, '');
-                    if (window.ZipLoader && window.ZipLoader.getFile) {
-                        var bytes = window.ZipLoader.getFile(normalized);
-                        if (bytes) return new TextDecoder('utf-8').decode(bytes);
-                    }
-                    if (/^languages\//i.test(normalized) &&
-                        window.ZipLoader && typeof window.ZipLoader.hasLanguagePack === 'function' &&
-                        window.ZipLoader.hasLanguagePack()) {
-                        return '';
-                    }
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('GET', urlPath, false);
-                    xhr.send();
-                    return (xhr.status === 200 || xhr.status === 0) ? xhr.responseText : null;
-                } catch(e) {
-                    return null;
-                }
-            }
-            
-            const memoryFS = {};
-            window.__memoryFS = memoryFS;
-            
-            window.require = function(mod) {
-                const cleanMod = window.stripSdcardPath ? window.stripSdcardPath(mod) : mod;
-                if (cleanMod === 'fs') {
-                    return {
-                        readdirSync: function(dirPath) {
-                            var normalized = (dirPath || '').replace(/\\/g, '/').replace(/\/$/, '').toLowerCase();
-                            if (normalized.includes('languages/en') || normalized.includes('languages\\en')) {
-                                return ['00_Bf_Dialogue.yaml','00_template.yaml','01_cutscenes_neighbors.yaml','01_map_whitespace.yaml','02_cutscenes_hideandseek.yaml','02_cutscenes_lostball.yaml','02_map_neighborsroom.yaml','03_cutscenes_basil.yaml','04_cutscenes_blackletters.yaml','05_cutscenes_spaceboyfriend.yaml','06_cutscenes_junkyard.yaml','07_cutscenes_spaceexboyfriend.yaml','08_cutscenes_captspaceboy.yaml','09_cutscenes_hobbeez.yaml','10_cutscenes_fakeknifefight.yaml','11_cutscenes_stolenalbum_pt1.yaml','12_cutscenes_stolenalbum_pt2.yaml','13_cutscenes_dinneratbasils.yaml','14_cutscenes_sweetheartquest.yaml','15_cutscenes_herothebachelor.yaml','16_cutscenes_thewedding.yaml','17_cutscenes_pollysworry.yaml','18_cutscenes_secretlake.yaml','19_cutscenes_kelshouse.yaml','20_cutscenes_sleepover.yaml','21_cutscenes_lastresort.yaml','22_cutscenes_humphrey.yaml','23_cutscenes_slimegirls.yaml','24_cutscenes_finalboss.yaml','25_cutscenes_blackhole.yaml','26_cutscenes_aubrey.yaml','27_cutscenes_treehouse.yaml','28_cutscenes_helpbasil.yaml','29_cutscenes_basilsplea.yaml','ALBUM.yaml','ALBUM_test.yaml','Bestiary.yaml','Database.yaml','System.yaml','TEST.yaml','XX_BLUE.yaml','XX_GENERAL.yaml','XX_ITEM_GET.yaml','XX_MARI_LOCATIONS.yaml','XX_MELON.yaml','XX_OCEAN.yaml','XX_QUEST.yaml','XX_QUEST_TRACKER.yaml','XX_SKILL_GET.yaml','XX_SYSTEM.yaml','XX_TAGREJECT.yaml','art_sculpture.yaml','basils_deathtrap.yaml','basils_finalmemories.yaml','basils_memories.yaml','basils_path.yaml','battle_book.yaml','black_space_flavor_text.yaml','black_space_rev.yaml','blackjack_minigame.yaml','blackspace_intro.yaml','breaktime_chatter.yaml','bs_basils_shadow.yaml','dreamworld_extras_blackspace.yaml','dreamworld_extras_dinosdig.yaml','dreamworld_extras_doomtomb.yaml','dreamworld_extras_misc.yaml','dreamworld_extras_objectflavor.yaml','dreamworld_extras_pyrefly.yaml','dreamworld_extras_shop.yaml','dreamworld_extras_slimegirls.yaml','dreamworld_lost_forest.yaml','dreamworld_npc_dialogue.yaml','dreamworld_npc_dialogue_forgottenpier.yaml','dreamworld_npc_dialogue_frozenforest.yaml','dreamworld_npc_dialogue_lastresort.yaml','dreamworld_npc_dialogue_orangeoasis.yaml','dreamworld_npc_dialogue_otherworld.yaml','dreamworld_npc_dialogue_pinwheel.yaml','dreamworld_npc_dialogue_playground.yaml','dreamworld_npc_dialogue_pyrefly_doomtomb.yaml','dreamworld_npc_dialogue_slimegirls.yaml','dreamworld_npc_dialogue_sproutmole_sweetheart.yaml','dreamworld_npc_dialogue_sweetheart.yaml','dreamworld_npc_dialogue_whitespace.yaml','dw_boss_rush.yaml','dw_flavor_text.yaml','dw_hero_charm.yaml','dw_map_of_truth.yaml','fa_fridges.yaml','fa_map_flavor.yaml','faraway_conditional.yaml','faraway_kels_room.yaml','faraway_something_about_basil.yaml','farawaytown_day3_friends.yaml','farawaytown_dialogue_day1_day.yaml','farawaytown_dialogue_day1_sunset.yaml','farawaytown_dialogue_day2_day.yaml','farawaytown_dialogue_day2_sunset.yaml','farawaytown_dialogue_day3_day.yaml','farawaytown_dialogue_day3_sunset.yaml','farawaytown_dialogue_strangers.yaml','farawaytown_dialogue_tucker.yaml','farawaytown_extradialogue.yaml','farawaytown_extras_dailydialogue.yaml','farawaytown_extras_endings.yaml','farawaytown_extras_fears.yaml','farawaytown_extras_hardwareminigame.yaml','farawaytown_extras_marinight.yaml','farawaytown_extras_mavericks.yaml','farawaytown_extras_misc.yaml','farawaytown_extras_momsdialogue.yaml','farawaytown_extras_objectflavor.yaml','farawaytown_extras_petrock.yaml','farawaytown_extras_pizzaminigame.yaml','farawaytown_extras_shop.yaml','farawaytown_extras_supermarketminigame.yaml','gacha_minigame.yaml','hidden_library.yaml','hide_and_seek.yaml','kel_errands.yaml','menus.yaml','miscellanous_dialogues.yaml','new_npcs.yaml','npc_general.yaml','party_dialogue.yaml','pluto.yaml','sidequest_dreamworld_bed.yaml','sidequest_dreamworld_coffeemachine.yaml','sidequest_dreamworld_crowfriends.yaml','sidequest_dreamworld_deliversprout.yaml','sidequest_dreamworld_demonboy.yaml','sidequest_dreamworld_feedhumphrey.yaml','sidequest_dreamworld_fliphim.yaml','sidequest_dreamworld_flowerpuzzle.yaml','sidequest_dreamworld_ghostgathering.yaml','sidequest_dreamworld_hector.yaml','sidequest_dreamworld_hectorjr.yaml','sidequest_dreamworld_ingredients.yaml','sidequest_dreamworld_itch.yaml','sidequest_dreamworld_jash.yaml','sidequest_dreamworld_lostrarebear.yaml','sidequest_dreamworld_lostson.yaml','sidequest_dreamworld_marina.yaml','sidequest_dreamworld_medusa.yaml','sidequest_dreamworld_molly.yaml','sidequest_dreamworld_mush.yaml','sidequest_dreamworld_oragne.yaml','sidequest_dreamworld_peanutjelly.yaml','sidequest_dreamworld_perfectwind.yaml','sidequest_dreamworld_pinkbeard.yaml','sidequest_dreamworld_poolnoodle.yaml','sidequest_dreamworld_rabbitkiller.yaml','sidequest_dreamworld_recycle.yaml','sidequest_dreamworld_seasons.yaml','sidequest_dreamworld_squizzards.yaml','sidequest_dreamworld_stargazing.yaml','sidequest_dreamworld_stolen.yaml','sidequest_dreamworld_stoprain.yaml','sidequest_dreamworld_tentacle.yaml','sidequest_farawaytown_anniversarychoco.yaml','sidequest_farawaytown_anniversarypizza.yaml','sidequest_farawaytown_artist.yaml','sidequest_farawaytown_birthdaygift1.yaml','sidequest_farawaytown_birthdaygift2.yaml','sidequest_farawaytown_bringangel.yaml','sidequest_farawaytown_brushteeth.yaml','sidequest_farawaytown_claus.yaml','sidequest_farawaytown_cooking.yaml','sidequest_farawaytown_fixarcademachine.yaml','sidequest_farawaytown_fixpipe.yaml','sidequest_farawaytown_flower.yaml','sidequest_farawaytown_forgotmeat.yaml','sidequest_farawaytown_fruitwaradrian.yaml','sidequest_farawaytown_fruitwarbrayden.yaml','sidequest_farawaytown_ginohighscore.yaml','sidequest_farawaytown_ginojukebox.yaml','sidequest_farawaytown_hobbeezhighscore.yaml','sidequest_farawaytown_jackson.yaml','sidequest_farawaytown_lostlucas.yaml','sidequest_farawaytown_medication.yaml','sidequest_farawaytown_michaelslunch.yaml','sidequest_farawaytown_michaelthemusician.yaml','sidequest_farawaytown_mincy.yaml','sidequest_farawaytown_missingshears.yaml','sidequest_farawaytown_mypie.yaml','sidequest_farawaytown_oldhobo.yaml','sidequest_farawaytown_pickingpaint.yaml','sidequest_farawaytown_pickupfurniture.yaml','sidequest_farawaytown_ringinthesink.yaml','sidequest_farawaytown_seashells.yaml','sidequest_farawaytown_shutin.yaml','sidequest_farawaytown_smellyhobo.yaml','sidequest_farawaytown_sneakingoutbrent.yaml','sidequest_farawaytown_sneakingoutjoy.yaml','sidequest_farawaytown_toiletseat.yaml','sidequest_farawaytown_trashpickup.yaml','sidequest_farawaytown_tutorbrent.yaml','sidequest_farawaytown_tutorjoy.yaml','sidequest_farawaytown_wherestheremote.yaml','signs.yaml','slot_machine_minigame.yaml','snaley_tragedy.yaml','televisions.yaml','wtf.yaml','xx_battle_text.yaml','xx_cutscenes_ems.yaml','xx_map_expansion.yaml','xx_tombstones.yaml'];
-                            }
-                            return [];
-                        },
-                        readFileSync: function(path, options) {
-                            const fixedPath = window.stripSdcardPath ? window.stripSdcardPath(path) : path;
-                            if (memoryFS[fixedPath]) return memoryFS[fixedPath];
-                            const content = readFileSyncXHR(fixedPath);
-                            if (content !== null) {
-                                memoryFS[fixedPath] = content;
-                                return content;
-                            }
-                            return '';
-                        },
-                        existsSync: function(path) { return true; },
-                        mkdirSync: function(dirPath) { return true; },
-                        unlinkSync: function(path) {
-                            var key = window.stripSdcardPath ? window.stripSdcardPath(path) : path;
-                            delete memoryFS[key];
-                            if (window.WOClient && window.WOClient.remove) {
-                                try { window.WOClient.remove(key); } catch (e) {}
-                            }
-                        },
-                        writeFileSync: function(path, data) {
-                            var strData = data;
-                            if (data instanceof Uint8Array || (typeof Buffer !== 'undefined' && data instanceof Buffer)) {
-                                strData = new TextDecoder('utf-8').decode(data);
-                            }
-                            var key = window.stripSdcardPath ? window.stripSdcardPath(path) : path;
-                            memoryFS[key] = strData;
-                            if (window.WOClient && window.WOClient.put) {
-                                try { window.WOClient.put(key, strData); } catch (e) {}
-                            }
-                        },
-                        writeFile: function(path, data, callback) {
-                            this.writeFileSync(path, data);
-                            if (typeof callback === 'function') {
-                                setTimeout(function() { callback(null); }, 0);
-                            }
-                        },
-                        readFile: function(path, options, callback) {
-                            if (typeof options === 'function') {
-                                callback = options;
-                                options = null;
-                            }
-                            var key = window.stripSdcardPath ? window.stripSdcardPath(path) : path;
-                            var content = memoryFS[key];
-                            if (content === undefined) {
-                                content = readFileSyncXHR(key);
-                                if (content !== null) {
-                                    memoryFS[key] = content;
-                                } else {
-                                    content = '';
-                                }
-                            }
-                            if (typeof callback === 'function') {
-                                setTimeout(function() { callback(null, content); }, 0);
-                            }
-                        }
-                    };
-                }
-                if (cleanMod === 'path') {
-                    return {
-                        // FIX: Boolean.join → Boolean).join
-                        join: (...args) => args.filter(Boolean).join('/').replace(/\/+/g, '/'),
-                        dirname: (p) => p.split('/').slice(0, -1).join('/') || '.'
-                    };
-                }
-                if (cleanMod === 'nw.gui') return window.nw;
-                if (cleanMod.includes('js-yaml')) {
-                    // Robust YAML parser for browser
-                    function stripInlineComment(val) {
-                        var inQ = false;
-                        var qCh = '';
-                        for (var i = 0; i < val.length; i++) {
-                            var ch = val[i];
-                            if (!inQ && (ch === '"' || ch === "'")) { inQ = true; qCh = ch; continue; }
-                            if (inQ && ch === qCh) { inQ = false; qCh = ''; continue; }
-                            if (!inQ && ch === '#') { return val.substring(0, i).trim(); }
-                        }
-                        return val.trim();
-                    }
-                    function parseYamlValue(val) {
-                        val = stripInlineComment(val);
-                        if (val === '' || val === 'null' || val === '~') return undefined;
-                        if (val === 'true') return true;
-                        if (val === 'false') return false;
-                        // Flow mapping: {key: value, ...}
-                        // FIX: Quote bare identifiers before eval so that
-                        // {text: 'READ:', inputs: [shift]} → eval succeeds
-                        if (val.startsWith('{') && val.endsWith('}')) {
-                            try {
-                                var v = val.replace(/([{,]\s*)([a-zA-Z_]\w*)(\s*:)/g, '$1"$2"$3');
-                                v = v.replace(/\[([^\]]*)\]/g, function(m, i) {
-                                    i = i.trim();
-                                    if (!i) return '[]';
-                                    if (/^\s*[a-zA-Z_]\w*\s*$/.test(i)) return '["' + i + '"]';
-                                    return '[' + i.split(',').map(function(s) {
-                                        s = s.trim();
-                                        return /^[a-zA-Z_]\w*$/.test(s) ? '"' + s + '"' : s;
-                                    }).join(',') + ']';
-                                });
-                                return eval('(' + v + ')');
-                            } catch(e) { return val; }
-                        }
-                        // Flow sequence (array): [item1, item2, ...]
-                        if (val.startsWith('[') && val.endsWith(']')) {
-                            var inner = val.slice(1, -1).trim();
-                            if (!inner) return [];
-                            var arr = [];
-                            var cur = '';
-                            var inQ = false;
-                            var qCh = '';
-                            for (var i = 0; i < inner.length; i++) {
-                                var ch = inner[i];
-                                if (!inQ && (ch === '"' || ch === "'")) { inQ = true; qCh = ch; continue; }
-                                if (inQ && ch === qCh) { inQ = false; qCh = ''; continue; }
-                                if (!inQ && ch === ',') { arr.push(parseSimpleVal(cur.trim())); cur = ''; continue; }
-                                cur += ch;
-                            }
-                            if (cur.trim()) arr.push(parseSimpleVal(cur.trim()));
-                            return arr;
-                        }
-                        if (!isNaN(val) && val !== '') return Number(val);
-                        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) return val.slice(1, -1);
-                        return val;
-                    }
-                    function parseSimpleVal(val) {
-                        val = stripInlineComment(val);
-                        if (val === '' || val === 'null' || val === '~') return null;
-                        if (val === 'true') return true;
-                        if (val === 'false') return false;
-                        // FIX: Same bare-identifier quoting as parseYamlValue
-                        if (val.startsWith('{') && val.endsWith('}')) {
-                            try {
-                                var v = val.replace(/([{,]\s*)([a-zA-Z_]\w*)(\s*:)/g, '$1"$2"$3');
-                                v = v.replace(/\[([^\]]*)\]/g, function(m, i) {
-                                    i = i.trim();
-                                    if (!i) return '[]';
-                                    if (/^\s*[a-zA-Z_]\w*\s*$/.test(i)) return '["' + i + '"]';
-                                    return '[' + i.split(',').map(function(s) {
-                                        s = s.trim();
-                                        return /^[a-zA-Z_]\w*$/.test(s) ? '"' + s + '"' : s;
-                                    }).join(',') + ']';
-                                });
-                                return eval('(' + v + ')');
-                            } catch(e) { return val; }
-                        }
-                        if (!isNaN(val) && val !== '') return Number(val);
-                        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) return val.slice(1, -1);
-                        return val;
-                    }
-                    return {
-                        load: function(yamlString) {
-                            var result = {};
-                            var lines = yamlString.split('\n');
-                            var stack = [{obj: result, indent: -1, parent: null, key: null}];
-                            for (var li = 0; li < lines.length; li++) {
-                                var line = lines[li];
-                                var trimmed = line.trim();
-                                if (!trimmed || trimmed.startsWith('#')) continue;
-                                var indent = line.search(/\S|$/);
-                                while (stack.length > 1 && indent <= stack[stack.length - 1].indent) stack.pop();
-                                var ctx = stack[stack.length - 1].obj;
-
-                                // YAML sequence item: "- value" or "- key: value"
-                                var seqMatch = trimmed.match(/^-\s+(.*)$/);
-                                if (seqMatch) {
-                                    var seqVal = seqMatch[1];
-                                    // Convert ctx from object to array if it's the first sequence item
-                                    if (!Array.isArray(ctx)) {
-                                        var entry = stack[stack.length - 1];
-                                        var arr = [];
-                                        if (entry.parent && entry.key !== null) {
-                                            entry.parent[entry.key] = arr;
-                                        }
-                                        entry.obj = arr;
-                                        ctx = arr;
-                                    }
-                                    // FIX: When the list item value starts with { or [,
-                                    // it's an inline flow object/array — parse it as a
-                                    // whole value instead of splitting on the first colon.
-                                    if (seqVal.charAt(0) === '{' || seqVal.charAt(0) === '[') {
-                                        var parsed = parseYamlValue(seqVal);
-                                        ctx.push(parsed !== undefined ? parsed : seqVal);
-                                        continue;
-                                    }
-                                    // Check if item is a mapping: "- key: value"
-                                    var seqVm = seqVal.match(/^([^:]+):\s*(.*)$/);
-                                    if (seqVm) {
-                                        var seqKey = seqVm[1].trim();
-                                        var seqValue = seqVm[2].trim();
-                                        var seqParsed = parseYamlValue(seqValue);
-                                        var newObj = {};
-                                        if (seqParsed === undefined) {
-                                            newObj[seqKey] = {};
-                                        } else {
-                                            newObj[seqKey] = seqParsed;
-                                        }
-                                        ctx.push(newObj);
-                                        stack.push({obj: newObj, indent: indent, parent: null, key: null});
-                                    } else {
-                                        var parsed2 = parseYamlValue(seqVal);
-                                        ctx.push(parsed2 !== undefined ? parsed2 : seqVal);
-                                    }
-                                    continue;
-                                }
-
-                                var vm = trimmed.match(/^([^:]+):\s*(.*)$/);
-                                if (!vm) continue;
-                                var key = vm[1].trim();
-                                var val = vm[2].trim();
-                                var parsed = parseYamlValue(val);
-                                if (parsed === undefined) {
-                                    ctx[key] = {};
-                                    stack.push({obj: ctx[key], indent: indent, parent: ctx, key: key});
-                                } else {
-                                    ctx[key] = parsed;
-                                }
-                            }
-                            return result;
-                        },
-                        safeLoad: function(yamlString) {
-                            return this.load(yamlString);
-                        }
-                    };
-                }
-                return {};
-            };
-        })();
-    </script>
-    <!-- ============================================================ -->
-    <!-- 4.5 WO_CLIENT - IndexedDB persistence for the fs polyfill -->
-    <!-- ============================================================ -->
-    <script>
-        (function() {
-            'use strict';
-            var DB_NAME = 'WO_Client';
-            var STORE = 'files';
-            var dbPromise = null;
-            function openDb() {
-                if (dbPromise) return dbPromise;
-                if (typeof indexedDB === 'undefined') {
-                    dbPromise = Promise.reject(new Error('indexedDB unavailable'));
-                    return dbPromise;
-                }
-                dbPromise = new Promise(function(resolve, reject) {
-                    var req = indexedDB.open(DB_NAME, 1);
-                    req.onupgradeneeded = function(e) {
-                        var db = e.target.result;
-                        if (!db.objectStoreNames.contains(STORE)) {
-                            db.createObjectStore(STORE, { keyPath: 'path' });
-                        }
-                    };
-                    req.onsuccess = function(e) { resolve(e.target.result); };
-                    req.onerror = function(e) { reject(e.target.error); };
-                });
-                return dbPromise;
-            }
-            function put(path, data) {
-                openDb().then(function(db) {
-                    return new Promise(function(resolve, reject) {
-                        var tx = db.transaction(STORE, 'readwrite');
-                        tx.objectStore(STORE).put({ path: path, data: data });
-                        tx.oncomplete = resolve;
-                        tx.onerror = function() { reject(tx.error); };
-                    });
-                }).catch(function() {});
-            }
-            function remove(path) {
-                openDb().then(function(db) {
-                    return new Promise(function(resolve, reject) {
-                        var tx = db.transaction(STORE, 'readwrite');
-                        tx.objectStore(STORE).delete(path);
-                        tx.oncomplete = resolve;
-                        tx.onerror = function() { reject(tx.error); };
-                    });
-                }).catch(function() {});
-            }
-            function loadAll() {
-                return openDb().then(function(db) {
-                    return new Promise(function(resolve, reject) {
-                        var tx = db.transaction(STORE, 'readonly');
-                        var req = tx.objectStore(STORE).getAll();
-                        req.onsuccess = function() { resolve(req.result || []); };
-                        req.onerror = function() { reject(req.error); };
-                    });
-                }).catch(function() { return []; });
-            }
-            window.WOClient = { DB_NAME: DB_NAME, put: put, remove: remove, loadAll: loadAll };
-            loadAll().then(function(entries) {
-                if (window.__memoryFS) {
-                    (entries || []).forEach(function(e) { window.__memoryFS[e.path] = e.data; });
-                }
-            });
-        })();
-    </script>
-    <script>
-        if (typeof window.process === 'undefined') {
-            window.process = {
-                platform: 'browser',
-                versions: { node: '12.0.0', chrome: '80.0.0' },
-                env: { NODE_ENV: 'production' },
-                cwd: function() { return '/'; },
-                nextTick: function(cb) { setTimeout(cb, 0); }
-            };
-        }
-    </script>
-    <!-- ============================================================ -->
-    <!-- 5. LOAD GAME LIBRARIES -->
-    <!-- ============================================================ -->
-    <script type="text/javascript" src="js/libs/fpsmeter.js"></script>
-    <script type="text/javascript" src="js/libs/pixi.js"></script>
-    <script type="text/javascript" src="js/libs/pixi-tilemap.js"></script>
-    <script type="text/javascript" src="js/libs/pixi-picture.js"></script>
-    <script type="text/javascript" src="js/libs/lz-string.js"></script>
-    <script type="text/javascript" src="js/libs/iphone-inline-video.browser.js"></script>
-    
-    <!-- ============================================================ -->
-    <!-- 6. RPG MAKER SCRIPTS -->
-    <!-- ============================================================ -->
-    <script type="text/javascript" src="js/rpg_core.js"></script>
-    <script type="text/javascript" src="js/rpg_managers.js"></script>
-    <script type="text/javascript" src="js/rpg_objects.js"></script>
-    <script type="text/javascript" src="js/rpg_scenes.js"></script>
-    <script type="text/javascript" src="js/rpg_sprites.js"></script>
-    <script type="text/javascript" src="js/rpg_windows.js"></script>
-    
-    <!-- ============================================================ -->
-    <!-- 6.5 ZIP LOADER - Combines split zip parts and extracts assets -->
-    <!-- ============================================================ -->
-    <script type="text/javascript" src="fflate.js"></script>
-    <script type="text/javascript" src="js/zip_loader.js"></script>
-
-    <!-- ============================================================ -->
-    <!-- 6.5B ZIP LOADING PROGRESS BAR -->
-    <!-- ============================================================ -->
+    <script src="/fz.js"></script>
+    <script src="/14.js"></script>
+    <script src="/yp.js"></script>
+    <script src="/s6.js"></script>
+    <script src="/o1.js"></script>
+    <script src="/75.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/fpsmeter.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/pixi.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/pixi-tilemap.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/pixi-picture.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/lz-string.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/iphone-inline-video.browser.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_core.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_managers.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_objects.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_scenes.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_sprites.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_windows.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/fflate.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/zip_loader.js"></script>
+    <div id="dataConfirm" style="
+        display: none; flex-direction: column; justify-content: center; align-items: center;
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(0,0,0,0.95); z-index: 2147483648;
+        font-family: 'GameFont', monospace; color: #fff;
+        text-align: center; padding: 24px; box-sizing: border-box;
+    ">
+        <div style="font-size: 20px; margin-bottom: 10px; letter-spacing: 3px;">DATA USAGE WARNING</div>
+        <div style="max-width: 420px; font-size: 13px; line-height: 1.6; color: #ddd; margin-bottom: 8px;">
+            Starting will download roughly <b style="color:#ffd27f;">1.6 GB</b> of game files to your
+            browser, requiring roughly <b style="color:#ffd27f;">1.6 GB</b> of storage. On a metered
+            or mobile connection this can<span id="dataMetaWarning" style="display:none;"> consume a significant
+            amount of data and</span> take a while. Please only proceed if you want to continue.
+        </div>
+        <div style="font-size: 11px; color: #888; margin-bottom: 22px;">
+            These files are cached for future visits, so this download normally happens only once.
+        </div>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+            <button id="dataConfirmCancel" type="button" style="
+                padding: 10px 20px; border: 1px solid rgba(255,255,255,0.35); border-radius: 5px;
+                background: rgba(255,255,255,0.08); color: #ccc; font: inherit; font-size: 12px;
+                letter-spacing: 1px; cursor: pointer;
+            ">LEAVE</button>
+            <button id="dataConfirmBegin" type="button" style="
+                padding: 11px 26px; border: 1px solid rgba(255,210,127,0.9); border-radius: 5px;
+                background: linear-gradient(180deg, #ffb347, #e0811f);
+                box-shadow: 0 4px 18px rgba(255,170,70,0.35), inset 0 1px rgba(255,255,255,0.3);
+                color: #3a2200; font: inherit; font-size: 13px; letter-spacing: 2px; font-weight: bold;
+                cursor: pointer; transition: transform .15s ease, filter .15s ease;
+            ">START DOWNLOAD</button>
+        </div>
+    </div>
+    <script src="/wc.js"></script>
     <div id="zipProgress" style="
         display: flex; flex-direction: column; justify-content: center; align-items: center;
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -524,300 +270,17 @@
             cursor: pointer; transition: transform .15s ease, filter .15s ease;
         ">LAUNCH</button>
     </div>
-
-    <!-- ============================================================ -->
-    <!-- 6.6 SAVE FILE UPLOAD TOOL -->
-    <!-- ============================================================ -->
     <div id="saveUploader" style="position: fixed; top: 5px; right: 5px; z-index: 2147483647; pointer-events: auto; background: rgba(0,0,0,0.85); padding: 6px 10px; border-radius: 4px; font-family: monospace; font-size: 11px; border: 1px solid rgba(255,255,255,0.2);">
-        <label for="saveFileInput" style="color: #ccc; cursor: pointer; margin-right: 6px;">📂 Upload .rpgsave</label>
+        <label for="saveFileInput" style="color: #ccc; cursor: pointer; margin-right: 6px;">Upload .rpgsave</label>
         <input type="file" id="saveFileInput" accept=".rpgsave" multiple style="display: none;" onchange="handleSaveUpload(event)">
         <span id="saveUploadStatus" style="color: #5f5; font-size: 10px;"></span>
         <br>
         <button type="button" id="exportSavesButton" style="margin-top: 6px; background: rgba(255,255,255,0.12); color: #ccc; border: 1px solid rgba(255,255,255,0.25); border-radius: 3px; padding: 3px 8px; font: inherit; font-size: 10px; cursor: pointer;" onclick="handleSaveExport(event)">💾 Export Saves</button>
     </div>
-    <script>
-        window._cachedTitleData = null;
-        
-        function handleSaveUpload(event) {
-            var files = event.target.files;
-            var loaded = 0;
-            var statusEl = document.getElementById('saveUploadStatus');
-            statusEl.textContent = 'Loading...';
-            statusEl.style.color = '#ff0';
-            
-            for (var i = 0; i < files.length; i++) {
-                (function(file) {
-                    var reader = new FileReader();
-                    reader.onload = function(e) {
-                        var content = e.target.result;
-                        var fileName = file.name;
-                        var slotMatch = fileName.match(/file(\d+)\.rpgsave/i);
-                        var slotId = slotMatch ? parseInt(slotMatch[1]) : null;
-                        
-                        if (slotId && slotId >= 1 && slotId <= 20) {
-                            var key = 'RPG File' + slotId;
-                            var isCompressed = /^[A-Za-z0-9+/=]+$/.test(content.trim()) && content.length > 50;
-                            var storageData = isCompressed ? content : (typeof LZString !== 'undefined' ? LZString.compressToBase64(content) : content);
-                            localStorage.setItem(key, storageData);
-                            loaded++;
-                        } else if (fileName.toLowerCase() === 'global.rpgsave') {
-                            var isComp = /^[A-Za-z0-9+/=]+$/.test(content.trim()) && content.length > 50;
-                            localStorage.setItem('RPG Global', isComp ? content : (typeof LZString !== 'undefined' ? LZString.compressToBase64(content) : content));
-                            loaded++;
-                        } else if (fileName.toLowerCase() === 'config.rpgsave') {
-                            var isC = /^[A-Za-z0-9+/=]+$/.test(content.trim()) && content.length > 50;
-                            localStorage.setItem('RPG Config', isC ? content : (typeof LZString !== 'undefined' ? LZString.compressToBase64(content) : content));
-                            loaded++;
-                        } else if (fileName.toLowerCase() === 'titledata') {
-                            window._cachedTitleData = content.trim();
-                            loaded++;
-                        }
-                        
-                        if (loaded === files.length) {
-                            statusEl.textContent = loaded + ' save(s) loaded! Refresh to apply.';
-                            statusEl.style.color = '#5f5';
-                        }
-                    };
-                    reader.readAsText(file);
-                })(files[i]);
-            }
-            event.target.value = '';
-        }
-        
-        function handleSaveExport(event) {
-            var statusEl = document.getElementById('saveUploadStatus');
-            statusEl.textContent = 'Zipping...';
-            statusEl.style.color = '#ff0';
-            setTimeout(function() {
-                try {
-                    var files = {};
-                    for (var i = 1; i <= 20; i++) {
-                        var slot = localStorage.getItem('RPG File' + i);
-                        if (slot) { files['file' + i + '.rpgsave'] = slot; }
-                    }
-                    var g = localStorage.getItem('RPG Global');
-                    if (g) { files['global.rpgsave'] = g; }
-                    var c = localStorage.getItem('RPG Config');
-                    if (c) { files['config.rpgsave'] = c; }
-                    var ttd = window.__memoryFS && (window.__memoryFS['/TITLEDATA'] || window.__memoryFS['TITLEDATA']);
-                    if (ttd) { files['TITLEDATA'] = ttd; }
-                    if (window.__memoryFS) {
-                        Object.keys(window.__memoryFS).forEach(function(k) {
-                            if (/\.rpgsave$/.test(k) && !files[k]) { files[k] = window.__memoryFS[k]; }
-                        });
-                    }
-                    var names = Object.keys(files);
-                    if (names.length === 0) {
-                        statusEl.textContent = 'No saves to export.';
-                        statusEl.style.color = '#f88';
-                        return;
-                    }
-                    if (typeof fflate !== 'undefined' && fflate.zipSync) {
-                        var enc = new TextEncoder();
-                        var byteFiles = {};
-                        Object.keys(files).forEach(function(k) { byteFiles[k] = enc.encode(files[k]); });
-                        var zipBytes = fflate.zipSync(byteFiles, { level: 0 });
-                        var blob = new Blob([zipBytes], { type: 'application/zip' });
-                        var a = document.createElement('a');
-                        a.href = URL.createObjectURL(blob);
-                        a.download = 'WO_Client_saves_' + new Date().toISOString().replace(/[:.]/g, '-') + '.zip';
-                        document.body.appendChild(a);
-                        a.click();
-                        setTimeout(function() { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-                    } else {
-                        names.forEach(function(name) {
-                            var b = new Blob([files[name]], { type: 'text/plain' });
-                            var el = document.createElement('a');
-                            el.href = URL.createObjectURL(b);
-                            el.download = name;
-                            document.body.appendChild(el);
-                            el.click();
-                            setTimeout(function() { URL.revokeObjectURL(el.href); el.remove(); }, 1000);
-                        });
-                    }
-                    statusEl.textContent = names.length + ' save(s) exported!';
-                    statusEl.style.color = '#5f5';
-                } catch (e) {
-                    statusEl.textContent = 'Export failed: ' + e.message;
-                    statusEl.style.color = '#f88';
-                }
-            }, 10);
-        }
-    </script>
-    
-    <!-- ============================================================ -->
-    <!-- 7. PLUGINS & MAIN -->
-    <!-- ============================================================ -->
-    <script type="text/javascript" src="js/plugins.js"></script>
-    <script type="text/javascript" src="js/main.js"></script>
-    
-    <!-- ============================================================ -->
-    <!-- 8. MOBILE CONTROLS + FULLSCREEN / LANDSCAPE FIXES -->
-    <!-- ============================================================ -->
-    <style>
-        #mobileControls {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            z-index: 2147483645;
-            pointer-events: none;
-            display: none;  /* hidden until mobile JS enables */
-            justify-content: space-between;
-            align-items: center;
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-touch-callout: none;
-            touch-action: manipulation;
-        }
-        #mctrlLeftPanel {
-            pointer-events: auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        #mctrlRightPanel {
-            pointer-events: auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-        .mctrl-btn {
-            pointer-events: auto;
-            border: 2px solid rgba(255,255,255,0.35);
-            border-radius: 12px;
-            background: rgba(20,20,30,0.55);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            color: rgba(255,255,255,0.85);
-            font-family: 'GameFont', monospace, sans-serif;
-            font-size: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            cursor: pointer;
-            transition: background 0.08s, transform 0.08s;
-        }
-        .mctrl-btn:active,
-        .mctrl-btn.pressed {
-            background: rgba(255,255,255,0.25);
-            border-color: rgba(255,255,255,0.6);
-            transform: scale(0.93);
-        }
-        #mctrlDpad {
-            pointer-events: auto;
-            position: relative;
-            width: 150px;
-            height: 150px;
-            flex-shrink: 0;
-        }
-        .mctrl-dpad-btn {
-            position: absolute;
-            width: 46px;
-            height: 46px;
-            border: 2px solid rgba(255,255,255,0.35);
-            border-radius: 10px;
-            background: rgba(20,20,30,0.55);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            color: rgba(255,255,255,0.7);
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background 0.08s, transform 0.08s;
-            touch-action: manipulation;
-        }
-        .mctrl-dpad-btn:active,
-        .mctrl-dpad-btn.pressed {
-            background: rgba(255,255,255,0.3);
-            border-color: rgba(255,255,255,0.65);
-            transform: scale(0.9);
-        }
-        #mctrlDpadUp    { top: 0;   left: 52px; }
-        #mctrlDpadDown  { bottom: 0; left: 52px; }
-        #mctrlDpadLeft  { top: 52px; left: 0; }
-        #mctrlDpadRight { top: 52px; right: 0; }
-        #mctrlDpadCenter {
-            position: absolute;
-            top: 52px; left: 52px;
-            width: 46px; height: 46px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.08);
-            pointer-events: none;
-        }
-        #mctrlActionRow {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-        }
-        .mctrl-action {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            font-size: 15px;
-            font-weight: bold;
-        }
-        .mctrl-action-sm {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            font-size: 12px;
-        }
-        #mctrlBtnZ {
-            background: rgba(80,60,180,0.55);
-            border-color: rgba(160,140,255,0.5);
-        }
-        #mctrlBtnZ:active, #mctrlBtnZ.pressed {
-            background: rgba(140,110,255,0.4);
-            border-color: rgba(180,160,255,0.8);
-        }
-        #mctrlBtnX {
-            background: rgba(180,50,50,0.5);
-            border-color: rgba(255,120,120,0.5);
-        }
-        #mctrlBtnX:active, #mctrlBtnX.pressed {
-            background: rgba(240,80,80,0.45);
-            border-color: rgba(255,150,150,0.8);
-        }
-        #mctrlBtnShift {
-            font-size: 11px;
-            background: rgba(50,120,50,0.5);
-            border-color: rgba(100,200,100,0.5);
-        }
-        #mctrlBtnShift:active, #mctrlBtnShift.pressed {
-            background: rgba(80,180,80,0.45);
-            border-color: rgba(140,240,140,0.8);
-        }
-        #mctrlToggle {
-            position: fixed;
-            top: 8px;
-            left: 8px;
-            z-index: 2147483647;
-            pointer-events: auto;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.35);
-            background: rgba(20,20,30,0.6);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            color: rgba(255,255,255,0.8);
-            font-size: 16px;
-            display: none;  /* hidden until mobile JS enables */
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            touch-action: manipulation;
-        }
-    </style>
+    <script src="/yl.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/main.js"></script>
+    <script src="/bd.js"></script>
     <button id="mctrlToggle" type="button" title="Hide mobile controls">🎮</button>
     <div id="mobileControls">
         <div id="mctrlLeftPanel">
@@ -843,298 +306,7 @@
                 <button class="mctrl-btn mctrl-action"    id="mctrlBtnShift" type="button">RUN</button>
             </div>
         </div>
-    </div>    <script>
-    (function() {
-        'use strict';
-
-        // ---- Reliable mobile detection ----
-        var ua = navigator.userAgent || '';
-        var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-        var hasTouch = isMobile ||
-                       (('ontouchstart' in window) && (navigator.maxTouchPoints > 0));
-
-        // ============================================================
-        // 8a. FULLSCREEN STRETCH + UPSCALE (runs on ALL devices)
-        // ============================================================
-        var _stretchBeforeFullscreen = null;
-
-        function applyCanvasUpscale(isFs) {
-            var canvas = document.getElementById('GameCanvas');
-            if (!canvas) return;
-            if (isFs) {
-                // Smooth filtering in fullscreen for a cleaner upscale
-                canvas.style.imageRendering = 'auto';
-                canvas.style.transition = 'width 0.15s ease, height 0.15s ease';
-            } else {
-                canvas.style.imageRendering = '';
-                canvas.style.transition = '';
-            }
-        }
-
-        function onFullscreenChange() {
-            var isFs = !!(document.fullscreenElement ||
-                          document.webkitFullscreenElement ||
-                          document.msFullscreenElement);
-            if (!window.Graphics) return;
-
-            if (isFs) {
-                if (_stretchBeforeFullscreen === null) {
-                    _stretchBeforeFullscreen = Graphics._stretchEnabled;
-                }
-                Graphics._stretchEnabled = true;
-            } else {
-                if (_stretchBeforeFullscreen !== null) {
-                    Graphics._stretchEnabled = _stretchBeforeFullscreen;
-                    _stretchBeforeFullscreen = null;
-                }
-            }
-            Graphics._updateAllElements();
-            applyCanvasUpscale(isFs);
-
-            if (typeof repositionControls === 'function') {
-                setTimeout(repositionControls, 80);
-            }
-        }
-
-        document.addEventListener('fullscreenchange', onFullscreenChange);
-        document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-        document.addEventListener('msfullscreenchange', onFullscreenChange);
-
-        // Patch F4 / the game's fullscreen toggle
-        var _origSwitchFullScreen = null;
-        function patchGraphicsFS() {
-            if (!window.Graphics || !Graphics._switchFullScreen) return;
-            if (Graphics._switchFullScreen === patchedSwitch) return;
-            _origSwitchFullScreen = Graphics._switchFullScreen;
-            Graphics._switchFullScreen = patchedSwitch;
-        }
-        function patchedSwitch() {
-            _origSwitchFullScreen.apply(this, arguments);
-        }
-        var _fsPatchTries = 0;
-        var _fsPatchTimer = setInterval(function() {
-            _fsPatchTries++;
-            patchGraphicsFS();
-            if (_origSwitchFullScreen || _fsPatchTries > 100) clearInterval(_fsPatchTimer);
-        }, 100);
-
-        // ============================================================
-        // 8b. MOBILE-ONLY SECTIONS (landscape lock + controls)
-        // ============================================================
-        if (!hasTouch) return;
-
-        // ---- 8b-i. LANDSCAPE ORIENTATION LOCK ----
-        (function() {
-            try {
-                if (screen.orientation && screen.orientation.lock) {
-                    screen.orientation.lock('landscape').catch(function() {});
-                }
-            } catch(_) {}
-            function onOrientChange() {
-                try {
-                    if (screen.orientation && screen.orientation.lock) {
-                        screen.orientation.lock('landscape').catch(function() {});
-                    }
-                } catch(_) {}
-            }
-            screen.orientation && screen.orientation.addEventListener('change', onOrientChange);
-        })();
-
-        // ---- 8b-ii. SHOW MOBILE CONTROLS ----
-        var controlsEl   = document.getElementById('mobileControls');
-        var toggleEl     = document.getElementById('mctrlToggle');
-        if (controlsEl) controlsEl.style.display = 'flex';
-        if (toggleEl)   toggleEl.style.display   = 'flex';
-
-        var leftPanel    = document.getElementById('mctrlLeftPanel');
-        var rightPanel   = document.getElementById('mctrlRightPanel');
-        var controlsVisible = true;
-
-        // Button -> keyCode map
-        var btnMap = {
-            mctrlDpadUp:    38,  mctrlDpadDown:  40,
-            mctrlDpadLeft:  37,  mctrlDpadRight: 39,
-            mctrlBtnZ:      90,  mctrlBtnX:      88,
-            mctrlBtnShift:  16,  mctrlBtnQ:      81,
-            mctrlBtnW:      87,  mctrlBtnA:      65
-        };
-
-        var heldKeys = {};
-
-        function fireKey(elId, type) {
-            var code = btnMap[elId];
-            if (code == null) return;
-
-            if (type === 'keydown') {
-                if (heldKeys[code]) return;
-                heldKeys[code] = true;
-            } else {
-                if (!heldKeys[code]) return;
-                heldKeys[code] = false;
-            }
-
-            var ev;
-            try {
-                ev = new KeyboardEvent(type, { bubbles: true, cancelable: true });
-            } catch(e) {
-                ev = document.createEvent('KeyboardEvent');
-                if (ev.initKeyboardEvent) {
-                    ev.initKeyboardEvent(type, true, true, window, '', 0, '', false, '');
-                } else if (ev.initKeyEvent) {
-                    ev.initKeyEvent(type, true, true, window, false, false, false, false, code, 0);
-                }
-            }
-
-            try {
-                Object.defineProperty(ev, 'keyCode', { get: function() { return code; } });
-                Object.defineProperty(ev, 'which',  { get: function() { return code; } });
-            } catch(_) {}
-
-            document.dispatchEvent(ev);
-        }
-
-        function markPressed(el, on) {
-            if (on) { el.classList.add('pressed'); }
-            else    { el.classList.remove('pressed'); }
-        }
-
-        // Attach pointer events to every control button
-        Object.keys(btnMap).forEach(function(id) {
-            var el = document.getElementById(id);
-            if (!el) return;
-
-            el.addEventListener('pointerdown', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                el.setPointerCapture(e.pointerId);
-                markPressed(el, true);
-                fireKey(id, 'keydown');
-            });
-
-            el.addEventListener('pointerup', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                markPressed(el, false);
-                fireKey(id, 'keyup');
-            });
-
-            el.addEventListener('pointerleave', function(e) {
-                markPressed(el, false);
-                fireKey(id, 'keyup');
-            });
-
-            el.addEventListener('pointercancel', function(e) {
-                markPressed(el, false);
-                fireKey(id, 'keyup');
-            });
-
-            el.addEventListener('contextmenu', function(e) {
-                e.preventDefault();
-            });
-        });
-
-        function releaseAll() {
-            Object.keys(heldKeys).forEach(function(c) {
-                var code = +c;
-                if (!heldKeys[code]) return;
-                heldKeys[code] = false;
-                try {
-                    var ev = new KeyboardEvent('keyup', { bubbles: true, cancelable: true });
-                    Object.defineProperty(ev, 'keyCode', { get: function() { return code; } });
-                    Object.defineProperty(ev, 'which',  { get: function() { return code; } });
-                    document.dispatchEvent(ev);
-                } catch(_) {}
-            });
-            Object.keys(btnMap).forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) markPressed(el, false);
-            });
-        }
-
-        // Dynamically position controls in the sidebars
-        function repositionControls() {
-            if (!controlsVisible) return;
-
-            var canvas = document.getElementById('GameCanvas');
-            if (!canvas) return;
-
-            var cRect = canvas.getBoundingClientRect();
-            var vw = window.innerWidth;
-            var vh = window.innerHeight;
-
-            var leftBarWidth  = cRect.left;
-            var rightBarWidth = vw - cRect.right;
-            var bottomBarHeight = vh - cRect.bottom;
-
-            var dpadSize = 150;
-            var btnAreaWidth = 120;
-            var minSidebar = 60;
-
-            if (leftBarWidth >= minSidebar && rightBarWidth >= btnAreaWidth) {
-                controlsEl.style.flexDirection = 'row';
-                controlsEl.style.justifyContent = 'space-between';
-                controlsEl.style.alignItems = 'center';
-                controlsEl.style.paddingLeft  = Math.max(6, (leftBarWidth - dpadSize) / 2) + 'px';
-                controlsEl.style.paddingRight = Math.max(6, (rightBarWidth - btnAreaWidth) / 2) + 'px';
-                controlsEl.style.paddingTop = '0px';
-                controlsEl.style.paddingBottom = '0px';
-                leftPanel.style.display = '';
-                rightPanel.style.display = '';
-                rightPanel.style.flexDirection = 'column';
-            } else if (bottomBarHeight >= 140) {
-                controlsEl.style.flexDirection = 'row';
-                controlsEl.style.justifyContent = 'space-between';
-                controlsEl.style.alignItems = 'flex-end';
-                controlsEl.style.paddingLeft = '16px';
-                controlsEl.style.paddingRight = '16px';
-                controlsEl.style.paddingTop = '0px';
-                controlsEl.style.paddingBottom = Math.max(4, (bottomBarHeight - dpadSize) / 2) + 'px';
-                leftPanel.style.display = '';
-                rightPanel.style.display = '';
-                rightPanel.style.flexDirection = 'column';
-            } else {
-                controlsEl.style.display = 'none';
-                return;
-            }
-            controlsEl.style.display = 'flex';
-        }
-
-        window.repositionControls = repositionControls;
-
-        window.addEventListener('resize', function() {
-            setTimeout(repositionControls, 80);
-        });
-        window.addEventListener('orientationchange', function() {
-            setTimeout(repositionControls, 300);
-        });
-
-        var _posRetries = 0;
-        var _posTimer = setInterval(function() {
-            _posRetries++;
-            if (document.getElementById('GameCanvas') || _posRetries > 200) {
-                clearInterval(_posTimer);
-                repositionControls();
-            }
-        }, 100);
-
-        toggleEl.addEventListener('pointerdown', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            controlsVisible = !controlsVisible;
-            controlsEl.style.display = controlsVisible ? 'flex' : 'none';
-            toggleEl.textContent = controlsVisible ? '🎮' : '👁';
-            if (!controlsVisible) {
-                releaseAll();
-            } else {
-                repositionControls();
-            }
-        });
-
-        window.addEventListener('pagehide', releaseAll);
-    })();
-    </script>
-
-
-
+    </div>
+    <script src="/c5.js"></script>
 </body>
 </html>
