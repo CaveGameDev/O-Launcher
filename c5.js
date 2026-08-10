@@ -1,22 +1,17 @@
     (function() {
         'use strict';
 
-        // ---- Reliable mobile detection ----
         var ua = navigator.userAgent || '';
         var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
         var hasTouch = isMobile ||
                        (('ontouchstart' in window) && (navigator.maxTouchPoints > 0));
 
-        // ============================================================
-        // 8a. FULLSCREEN STRETCH + UPSCALE (runs on ALL devices)
-        // ============================================================
         var _stretchBeforeFullscreen = null;
 
         function applyCanvasUpscale(isFs) {
             var canvas = document.getElementById('GameCanvas');
             if (!canvas) return;
             if (isFs) {
-                // Smooth filtering in fullscreen for a cleaner upscale
                 canvas.style.imageRendering = 'auto';
                 canvas.style.transition = 'width 0.15s ease, height 0.15s ease';
             } else {
@@ -54,7 +49,6 @@
         document.addEventListener('webkitfullscreenchange', onFullscreenChange);
         document.addEventListener('msfullscreenchange', onFullscreenChange);
 
-        // Patch F4 / the game's fullscreen toggle
         var _origSwitchFullScreen = null;
         function patchGraphicsFS() {
             if (!window.Graphics || !Graphics._switchFullScreen) return;
@@ -72,12 +66,8 @@
             if (_origSwitchFullScreen || _fsPatchTries > 100) clearInterval(_fsPatchTimer);
         }, 100);
 
-        // ============================================================
-        // 8b. MOBILE-ONLY SECTIONS (landscape lock + controls)
-        // ============================================================
         if (!hasTouch) return;
 
-        // ---- 8b-i. LANDSCAPE ORIENTATION LOCK ----
         (function() {
             try {
                 if (screen.orientation && screen.orientation.lock) {
@@ -94,7 +84,6 @@
             screen.orientation && screen.orientation.addEventListener('change', onOrientChange);
         })();
 
-        // ---- 8b-ii. SHOW MOBILE CONTROLS ----
         var controlsEl   = document.getElementById('mobileControls');
         var toggleEl     = document.getElementById('mctrlToggle');
         if (controlsEl) controlsEl.style.display = 'flex';
@@ -104,7 +93,6 @@
         var rightPanel   = document.getElementById('mctrlRightPanel');
         var controlsVisible = true;
 
-        // Button -> keyCode map
         var btnMap = {
             mctrlDpadUp:    38,  mctrlDpadDown:  40,
             mctrlDpadLeft:  37,  mctrlDpadRight: 39,
@@ -152,7 +140,6 @@
             else    { el.classList.remove('pressed'); }
         }
 
-        // Attach pointer events to every control button
         Object.keys(btnMap).forEach(function(id) {
             var el = document.getElementById(id);
             if (!el) return;
@@ -205,7 +192,6 @@
             });
         }
 
-        // Dynamically position controls in the sidebars
         function repositionControls() {
             if (!controlsVisible) return;
 
