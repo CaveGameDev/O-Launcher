@@ -1,5 +1,3 @@
-        // Lock the consent page so no part of the boot (or accidental taps)
-        // reveals the loader until the player explicitly agrees to the download.
         document.getElementById('dataConfirm').style.display = 'flex';
         document.getElementById('dataConfirmBegin').addEventListener('click', function() {
             document.getElementById('dataConfirm').style.display = 'none';
