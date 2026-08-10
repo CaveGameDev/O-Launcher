@@ -172,8 +172,6 @@
     <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YIN - Minigame - SpaceInvaders.js">
     <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YIN_OmoriFixes.js">
     <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins/YSP_VideoPlayer.js">
-
-    <!-- Preload core engine scripts (loaded after plugins are primed) -->
     <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/dragonbones/dragonBones.js">
     <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/dragonbones/dragonBonesPixi.js">
     <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/fpsmeter.js">
@@ -199,63 +197,26 @@
 </head>
 
 <body style="background-color: black; overflow: hidden; margin: 0;">
-    
-    <!-- ============================================================ -->
-    <!-- 1. DOM ELEMENTS -->
-    <!-- ============================================================ -->
     <script src="/dom.js"></script>
-    
-    <!-- ============================================================ -->
-    <!-- 2. NW.JS IMPLEMENTATION -->
-    <!-- ============================================================ -->
     <script src="/nw.js"></script>
-    
-    <!-- ============================================================ -->
-    <!-- 3. PATH STRIPPER + CDN REWRITER -->
-    <!-- ============================================================ -->
-   <!-- ============================================================ -->
-    <!-- 3. PATH STRIPPER + CDN REWRITER                              -->
-    <!-- ============================================================ -->
     <script src="/path-cdn.js"></script>
-    
-    <!-- ============================================================ -->
-    <!-- 4. NODE.JS POLYFILL (Buffer & FS for Raw JSONs) -->
-    <!-- ============================================================ -->
     <script src="/node-polyfill.js"></script>
-    <!-- ============================================================ -->
-    <!-- 4.5 WO_CLIENT - IndexedDB persistence for the fs polyfill -->
-    <!-- ============================================================ -->
     <script src="/wo-client.js"></script>
     <script src="/process.js"></script>
-    <!-- ============================================================ -->
-    <!-- 5. LOAD GAME LIBRARIES -->
-    <!-- ============================================================ -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/fpsmeter.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/pixi.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/pixi-tilemap.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/pixi-picture.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/lz-string.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/libs/iphone-inline-video.browser.js"></script>
-    
-    <!-- ============================================================ -->
-    <!-- 6. RPG MAKER SCRIPTS -->
-    <!-- ============================================================ -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_core.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_managers.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_objects.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_scenes.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_sprites.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/rpg_windows.js"></script>
-    
-    <!-- ============================================================ -->
-    <!-- 6.5 ZIP LOADER - Combines split zip parts and extracts assets -->
-    <!-- ============================================================ -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/fflate.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/zip_loader.js"></script>
-
-    <!-- ============================================================ -->
-    <!-- 6.5A DATA USAGE WARNING / CONSENT GATE -->
-    <!-- ============================================================ -->
     <div id="dataConfirm" style="
         display: none; flex-direction: column; justify-content: center; align-items: center;
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -289,10 +250,6 @@
         </div>
     </div>
     <script src="/consent.js"></script>
-
-    <!-- ============================================================ -->
-    <!-- 6.5B ZIP LOADING PROGRESS BAR -->
-    <!-- ============================================================ -->
     <div id="zipProgress" style="
         display: flex; flex-direction: column; justify-content: center; align-items: center;
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -313,10 +270,6 @@
             cursor: pointer; transition: transform .15s ease, filter .15s ease;
         ">LAUNCH</button>
     </div>
-
-    <!-- ============================================================ -->
-    <!-- 6.6 SAVE FILE UPLOAD TOOL -->
-    <!-- ============================================================ -->
     <div id="saveUploader" style="position: fixed; top: 5px; right: 5px; z-index: 2147483647; pointer-events: auto; background: rgba(0,0,0,0.85); padding: 6px 10px; border-radius: 4px; font-family: monospace; font-size: 11px; border: 1px solid rgba(255,255,255,0.2);">
         <label for="saveFileInput" style="color: #ccc; cursor: pointer; margin-right: 6px;">Upload .rpgsave</label>
         <input type="file" id="saveFileInput" accept=".rpgsave" multiple style="display: none;" onchange="handleSaveUpload(event)">
@@ -325,18 +278,9 @@
         <button type="button" id="exportSavesButton" style="margin-top: 6px; background: rgba(255,255,255,0.12); color: #ccc; border: 1px solid rgba(255,255,255,0.25); border-radius: 3px; padding: 3px 8px; font: inherit; font-size: 10px; cursor: pointer;" onclick="handleSaveExport(event)">💾 Export Saves</button>
     </div>
     <script src="/save-tools.js"></script>
-    
-    <!-- ============================================================ -->
-    <!-- 7. PLUGINS & MAIN -->
-    <!-- ============================================================ -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/plugins.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaveGameDev/O-Launcher@Full-Fix/js/main.js"></script>
     <script src="/consent-gate.js"></script>
-    
-    <!-- ============================================================ -->
-    <!-- 8. MOBILE CONTROLS + FULLSCREEN / LANDSCAPE FIXES -->
-    <!-- ============================================================ -->
-
     <button id="mctrlToggle" type="button" title="Hide mobile controls">🎮</button>
     <div id="mobileControls">
         <div id="mctrlLeftPanel">
