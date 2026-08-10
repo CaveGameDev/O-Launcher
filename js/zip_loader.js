@@ -310,6 +310,15 @@
         });
     }
 
+    // Lightweight presence check: unlike cacheGetArchive() this never
+    // materializes the blob into memory, so a 500 MB archive can be verified
+    // by its stored size alone. Returns the stored size (0 if missing/empty).
+    function cacheHasArchive(name) {
+        return idbGet('archives', 'archive:' + name).then(function(blob) {
+            return blob ? blob.size : 0;
+        }).catch(function() { return 0; });
+    }
+
     // Store as a Blob so Chrome/Edge can spill large archives to disk.
     function cachePutArchive(name, bytes) {
         try {
@@ -801,6 +810,41 @@
             return _accountId;
         },
         accountId: function() { return _accountId; },
-        setCacheEnabled: function(flag) { _cacheEnabled = !!flag; return _cacheEnabled; }
+        setCacheEnabled: function(flag) { _cacheEnabled = !!flag; return _cacheEnabled; },
+        // True when every required archive is already in the IndexedDB cache
+        // with metadata matching manifest.json (version + total size). Used to
+        // skip the one-time data-consent screen for returning players.
+        // languages.zip is deliberately excluded: it is small, its absence is
+        // boot-non-fatal, and init() re-fetches it quietly behind the loading
+        // screen. Any error (missing manifest, IDB unavailable) returns false
+        // so the consent screen remains the safe default.
+        hasCachedArchives: function() {
+            return loadConfig().then(function(config) {
+                applyConfig(config || _config);
+                if (!_cacheEnabled) return false;
+                var required = [
+                    descWithManifest({ name: 'data.zip', folder: '', count: 1, pad: 0 }),
+                    descWithManifest({ name: 'maps.zip', folder: '', count: 1, pad: 0 }),
+                    descWithManifest({ name: 'img_repk.zip', folder: 'img_pack', count: 55, pad: 2 }),
+                    descWithManifest({ name: 'audio_repk.zip', folder: 'aud_pack', count: 111, pad: 3 })
+                ];
+                return Promise.all(required.map(function(desc) {
+                    return ensureMeta(desc).then(function(expected) {
+                        if (!expected) return false;
+                        return Promise.all([cacheGetMeta(desc.name), cacheHasArchive(desc.name)])
+                            .then(function(pair) {
+                                var meta = pair[0];
+                                var size = pair[1];
+                                return !!(meta && size > 0 &&
+                                    meta.version === expected.version &&
+                                    meta.totalSize === expected.totalSize &&
+                                    size === expected.totalSize);
+                            });
+                    }).catch(function() { return false; });
+                })).then(function(results) {
+                    return results.indexOf(false) === -1;
+                });
+            }).catch(function() { return false; });
+        }
     };
 })();
