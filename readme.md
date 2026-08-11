@@ -27,13 +27,15 @@ Open `http://localhost:8080`. On the first visit it downloads and caches the ass
 - **Caching** — assets download once, then later visits load instantly.
 - **Mobile controls** — an on-screen D-pad and action buttons appear on touch devices.
 - **Boot self-check** — if a script or asset fails to load, the page tells you exactly what went wrong instead of going blank.
-- **In theory, extremely moddable*
+- **In theory, extremely moddable** so try
 
 ## Limitations
 
 - Always serve over HTTP; the file protocol won't work.
 - Possible bugs throughout, mainly language errors.. just report them to me 
 
+## Also
+- **More Builds and fixes soon**, currently creating a compiled version for deploys
 ## Credits
 
 OMORI (c) OMOCAT, LLC. This is an unofficial browser port for preservation and accessibility. RPG Maker MV by Kadokawa / Yoji Ojima. Built on PIXI.js and fflate, plus plugins from the RPG Maker community (Yanfly, Galv, SumRndmDde, Olivia, and many more).
