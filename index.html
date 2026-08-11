@@ -215,6 +215,7 @@
     <script type="text/javascript" src="/js/rpg_windows.js"></script>
     <script type="text/javascript" src="/site/fflate.js"></script>
     <script type="text/javascript" src="/js/zip_loader.js"></script>
+    <script src="/site/modloader.js"></script>
     <div id="dataConfirm" style="
         display: none; flex-direction: column; justify-content: center; align-items: center;
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -259,7 +260,20 @@
             <div id="zipProgressFill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #6a5acd, #b19cd9); border-radius: 3px; transition: width 0.3s ease;"></div>
         </div>
         <div id="zipProgressLabel" style="font-size: 12px; margin-top: 10px; color: #888;">Initializing...</div>
-        <button id="zipLaunchButton" type="button" style="
+                    <div id="modUploader" style="display: none; margin-top: 16px; text-align: center;">
+                <label for="modFileInput" style="
+                    display: inline-block; padding: 8px 20px;
+                    border: 1px dashed rgba(255,255,255,0.4); border-radius: 4px;
+                    color: #aaa; font: inherit; font-size: 12px; letter-spacing: 1px;
+                    cursor: pointer; transition: border-color .2s;
+                " onmouseover="this.style.borderColor='rgba(200,180,255,0.8)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.4)'">
+                    + ADD MOD (.zip)
+                </label>
+                <input type="file" id="modFileInput" accept=".zip" multiple style="display: none;" onchange="handleModUpload(event)">
+                <div id="modInfo" style="margin-top: 8px; font-size: 11px; color: #8f8;"></div>
+                <div id="modWarn" style="margin-top: 4px; font-size: 10px; color: #f88;"></div>
+            </div>
+            <button id="zipLaunchButton" type="button" style="
             display: none; margin-top: 24px; padding: 11px 34px;
             border: 1px solid rgba(210,190,255,0.8); border-radius: 5px;
             background: linear-gradient(180deg, #8d78e8, #5e4ab4);
