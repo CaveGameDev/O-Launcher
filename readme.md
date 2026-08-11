@@ -27,7 +27,7 @@ Open `http://localhost:8080`. On the first visit it downloads and caches the ass
 - **Caching** — assets download once, then later visits load instantly.
 - **Mobile controls** — an on-screen D-pad and action buttons appear on touch devices.
 - **Boot self-check** — if a script or asset fails to load, the page tells you exactly what went wrong instead of going blank.
-- **Moddable** so try! Now Accepts omori mod zips!
+- **Moddable** so try! Now Accepts omori mod zips! (oneloader and more)
 
 ## Limitations
 
@@ -36,7 +36,7 @@ Open `http://localhost:8080`. On the first visit it downloads and caches the ass
 
 ## Also
 - **More Builds and fixes soon**, currently creating a compiled version for deploys
-- Slightly better than the gn-math version
+- Decently better than the gn-math version
 ## Credits
 
 OMORI (c) OMOCAT, LLC. This is an unofficial browser port for preservation and accessibility. RPG Maker MV by Kadokawa / Yoji Ojima. Built on PIXI.js and fflate, plus plugins from the RPG Maker community (Yanfly, Galv, SumRndmDde, Olivia, and many more).
