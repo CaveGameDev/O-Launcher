@@ -8,15 +8,54 @@
 
         var _stretchBeforeFullscreen = null;
 
-        function applyCanvasUpscale(isFs) {
-            var canvas = document.getElementById('GameCanvas');
-            if (!canvas) return;
-            if (isFs) {
-                canvas.style.imageRendering = 'auto';
-                canvas.style.transition = 'width 0.15s ease, height 0.15s ease';
+        function applyFullscreenFill(isFs) {
+            var canvases = ['GameCanvas', 'GameVideo', 'UpperCanvas'];
+            for (var j = 0; j < canvases.length; j++) {
+                var c = document.getElementById(canvases[j]);
+                if (!c) continue;
+                if (isFs) {
+                    c.style.position = 'absolute';
+                    c.style.margin = '0';
+                    c.style.transform = 'none';
+                    c.style.left = '50%';
+                    c.style.top = '50%';
+                    c.style.imageRendering = 'auto';
+                    c.style.transition = 'width 0.15s ease, height 0.15s ease';
+                } else {
+                    c.style.position = '';
+                    c.style.margin = '';
+                    c.style.transform = '';
+                    c.style.left = '';
+                    c.style.top = '';
+                    c.style.width = '';
+                    c.style.height = '';
+                    c.style.imageRendering = '';
+                    c.style.transition = '';
+                }
+            }
+            if (isFs) { sizeFullscreenCanvases(); }
+        }
+
+        function sizeFullscreenCanvases() {
+            var w = 0, h = 0;
+            var maxW = window.innerWidth;
+            var maxH = window.innerHeight;
+            if ((maxW * 0.75) > maxH) {
+                h = maxH;
+                w = Math.floor((maxH / 3) * 4);
             } else {
-                canvas.style.imageRendering = '';
-                canvas.style.transition = '';
+                w = maxW;
+                h = Math.floor((maxW / 4) * 3);
+            }
+            var canvases = ['GameCanvas', 'GameVideo', 'UpperCanvas'];
+            for (var j = 0; j < canvases.length; j++) {
+                var c = document.getElementById(canvases[j]);
+                if (c) {
+                    c.style.width  = w + 'px';
+                    c.style.height = h + 'px';
+                    c.style.marginLeft = -(w / 2) + 'px';
+                    c.style.marginTop  = -(h / 2) + 'px';
+                }
             }
         }
 
@@ -37,8 +76,8 @@
                     _stretchBeforeFullscreen = null;
                 }
             }
+            applyFullscreenFill(isFs);
             Graphics._updateAllElements();
-            applyCanvasUpscale(isFs);
 
             if (typeof repositionControls === 'function') {
                 setTimeout(repositionControls, 80);
@@ -48,6 +87,12 @@
         document.addEventListener('fullscreenchange', onFullscreenChange);
         document.addEventListener('webkitfullscreenchange', onFullscreenChange);
         document.addEventListener('msfullscreenchange', onFullscreenChange);
+        window.addEventListener('resize', function() {
+            if (document.fullscreenElement || document.webkitFullscreenElement ||
+                document.msFullscreenElement) {
+                sizeFullscreenCanvases();
+            }
+        });
 
         var _origSwitchFullScreen = null;
         function patchGraphicsFS() {
