@@ -6,6 +6,33 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="viewport" content="user-scalable=no">
     <script type="text/javascript" src="/site/bootcheck.js"></script>
+    <script>
+        // Capture F1-F24 keys before the browser does (F5 refresh, F11 fullscreen, etc.)
+        // and let the game's Input handler process them normally.
+        document.addEventListener('keydown', function(ev) {
+            if (ev.key && /^F\d+$/i.test(ev.key)) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                // Re-dispatch a non-cancelable copy so the game's handler sees it.
+                var clone = new KeyboardEvent('keydown', {
+                    key: ev.key, code: ev.code, keyCode: ev.keyCode,
+                    which: ev.which, bubbles: true, cancelable: false
+                });
+                ev.target.dispatchEvent(clone);
+            }
+        }, { capture: true });
+        document.addEventListener('keyup', function(ev) {
+            if (ev.key && /^F\d+$/i.test(ev.key)) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                var clone = new KeyboardEvent('keyup', {
+                    key: ev.key, code: ev.code, keyCode: ev.keyCode,
+                    which: ev.which, bubbles: true, cancelable: false
+                });
+                ev.target.dispatchEvent(clone);
+            }
+        }, { capture: true });
+    </script>
     <link rel="icon" href="/icon/icon.png" type="image/png">
     <link rel="apple-touch-icon" href="/icon/icon.png">
     <link rel="stylesheet" type="text/css" href="/fonts/gamefont.css">
