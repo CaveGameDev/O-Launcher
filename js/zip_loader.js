@@ -508,6 +508,72 @@
         });
     }
 
+    // ---- writable VFS (modding) ---------------------------------------------
+    // Mods overlay the read-only archive contents by writing (or overwriting)
+    // files here before the game boots. Writes are resolved case-insensitively
+    // like reads: if a base archive file already occupies the same
+    // case-insensitive path, the base entry is overwritten in place so the
+    // game's exact-case lookups (data/Map168.json, img/...) keep hitting the
+    // modded bytes instead of the stale base copy.
+
+    function invalidateBlobUrl(path) {
+        var insensitive = lookupPath(path).insensitive;
+        Object.keys(_blobUrls).forEach(function(key) {
+            if (key === path || lookupPath(key).insensitive === insensitive) {
+                try { URL.revokeObjectURL(_blobUrls[key]); } catch (e) {}
+                delete _blobUrls[key];
+            }
+        });
+    }
+
+    function putFile(path, bytes) {
+        var normalized = normalizePath(path);
+        var lookup = lookupPath(normalized);
+        var existing = _vfsInsensitive[lookup.insensitive];
+        var key;
+        if (existing && _vfs[existing] !== undefined && _vfs[existing] !== null) {
+            key = existing;
+        } else {
+            key = normalized;
+            _vfsInsensitive[lookup.insensitive] = normalized;
+        }
+        _vfs[key] = bytes;
+        invalidateBlobUrl(key);
+        return true;
+    }
+
+    function putText(path, text) {
+        return putFile(path, new TextEncoder().encode(String(text == null ? '' : text)));
+    }
+
+    function removeFile(path) {
+        var normalized = normalizePath(path);
+        var lookup = lookupPath(normalized);
+        var existing = _vfsInsensitive[lookup.insensitive];
+        if (existing) {
+            delete _vfs[existing];
+            delete _vfsInsensitive[lookup.insensitive];
+            invalidateBlobUrl(existing);
+            return true;
+        }
+        delete _vfs[normalized];
+        invalidateBlobUrl(normalized);
+        return true;
+    }
+
+    function hasFile(path) {
+        return bytesFor(path) != null;
+    }
+
+    function listFiles(prefix) {
+        var out = Object.keys(_vfs);
+        if (prefix) {
+            var p = normalizePath(prefix).toLowerCase();
+            out = out.filter(function(name) { return name.toLowerCase().indexOf(p) === 0; });
+        }
+        return out.sort();
+    }
+
     // ---- download / cache orchestration --------------------------------------
     function downloadArchive(desc, start, span, label, expected) {
         var base = archiveBaseUrl(desc);
@@ -790,6 +856,11 @@
         getFile: function(path) { return bytesFor(path); },
         getText: function(path) { return textFor(path); },
         getBlobUrl: function(path) { return blobUrlFor(path); },
+        putFile: putFile,
+        putText: putText,
+        removeFile: removeFile,
+        hasFile: hasFile,
+        listFiles: listFiles,
         refreshHooks: installHooks,
         // True once the language pack's files are in the VFS. The fs polyfill
         // uses this to decide whether a missing language file means "absent"
