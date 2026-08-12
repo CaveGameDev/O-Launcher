@@ -208,6 +208,8 @@
     <link rel="preload" as="script" href="/js/libs/pixi.js">
     <link rel="preload" as="script" href="/js/libs/trmix.min.js">
     <link rel="preload" as="script" href="/site/fflate.js">
+    <link rel="preload" as="script" href="/site/fast-json-patch.js">
+    <link rel="preload" as="script" href="/site/imagediff2.js">
     <link rel="preload" as="script" href="/js/rpg_core.js">
     <link rel="preload" as="script" href="/js/rpg_managers.js">
     <link rel="preload" as="script" href="/js/rpg_objects.js">
@@ -242,6 +244,9 @@
     <script type="text/javascript" src="/js/rpg_windows.js"></script>
     <script type="text/javascript" src="/site/fflate.js"></script>
     <script type="text/javascript" src="/js/zip_loader.js"></script>
+    <script src="/site/vfs_bridge.js"></script>
+    <script type="text/javascript" src="/site/fast-json-patch.js"></script>
+    <script type="text/javascript" src="/site/imagediff2.js"></script>
     <script src="/site/modloader.js"></script>
     <div id="dataConfirm" style="
         display: none; flex-direction: column; justify-content: center; align-items: center;
@@ -287,19 +292,21 @@
             <div id="zipProgressFill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #6a5acd, #b19cd9); border-radius: 3px; transition: width 0.3s ease;"></div>
         </div>
         <div id="zipProgressLabel" style="font-size: 12px; margin-top: 10px; color: #888;">Initializing...</div>
-                    <div id="modUploader" style="display: none; margin-top: 16px; text-align: center;">
-                <label for="modFileInput" style="
-                    display: inline-block; padding: 8px 20px;
-                    border: 1px dashed rgba(255,255,255,0.4); border-radius: 4px;
-                    color: #aaa; font: inherit; font-size: 12px; letter-spacing: 1px;
-                    cursor: pointer; transition: border-color .2s;
-                " onmouseover="this.style.borderColor='rgba(200,180,255,0.8)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.4)'">
-                    + ADD MOD (.zip)
-                </label>
-                <input type="file" id="modFileInput" accept=".zip" multiple style="display: none;" onchange="handleModUpload(event)">
-                <div id="modInfo" style="margin-top: 8px; font-size: 11px; color: #8f8;"></div>
-                <div id="modWarn" style="margin-top: 4px; font-size: 10px; color: #f88;"></div>
-            </div>
+        <div id="modUploader" style="display: none; margin-top: 18px; text-align: center; width: 100%; max-width: 520px; box-sizing: border-box;">
+            <div style="font-size: 13px; letter-spacing: 3px; color: #ccc; margin-bottom: 10px;">MODS</div>
+            <label for="modFileInput" style="
+                display: inline-block; padding: 9px 22px;
+                border: 1px dashed rgba(200,180,255,0.55); border-radius: 4px;
+                color: #cdc3f2; font: inherit; font-size: 12px; letter-spacing: 1px;
+                cursor: pointer; transition: border-color .2s, background .2s;
+            " onmouseover="this.style.borderColor='rgba(200,180,255,0.9)';this.style.background='rgba(200,180,255,0.08)'" onmouseout="this.style.borderColor='rgba(200,180,255,0.55)';this.style.background='transparent'">
+                + ADD MODS (.zip, multi-select)
+            </label>
+            <input type="file" id="modFileInput" accept=".zip,.omod,application/zip" multiple style="display: none;">
+            <div id="modList" style="margin-top: 12px; text-align: left; max-height: 190px; overflow-y: auto;"></div>
+            <div id="modInfo" style="margin-top: 8px; font-size: 11px; color: #8f8;"></div>
+            <div id="modWarn" style="margin-top: 4px; font-size: 10px; color: #f88; white-space: pre-wrap;"></div>
+        </div>
             <button id="zipLaunchButton" type="button" style="
             display: none; margin-top: 24px; padding: 11px 34px;
             border: 1px solid rgba(210,190,255,0.8); border-radius: 5px;
