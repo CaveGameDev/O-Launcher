@@ -3283,6 +3283,12 @@ Gamefall.Encryption = Gamefall.Encryption || {};
 				console.log('Loading ' + yamlFiles.length + ' language files for ' + language + ' from ZipLoader VFS');
 				for (var i = 0; i < yamlFiles.length; i++) {
 					var file = yamlFiles[i];
+					// The web archive stores language files lowercased, but the game
+					// keys them by their original desktop casing (XX_BLUE, System,
+					// Bestiary, …). Canonicalize so getMessageData("XX_BLUE.…") works.
+					if (window.OVFS && typeof window.OVFS.canonicalLanguageFile === 'function') {
+						file = window.OVFS.canonicalLanguageFile(file);
+					}
 					var filename = file.replace('.yaml', '');
 					var filePath = 'languages/' + language + '/' + file;
 					try {
@@ -3327,6 +3333,9 @@ Gamefall.Encryption = Gamefall.Encryption || {};
 			
 			for(var i = 0; i < yamlFiles.length; i++) {
 				var file = yamlFiles[i];
+				if (window.OVFS && typeof window.OVFS.canonicalLanguageFile === 'function') {
+					file = window.OVFS.canonicalLanguageFile(file);
+				}
 				var filename = file.replace('.yaml', '');
 				try {
 					var filePath = 'languages/' + language + '/' + file;
