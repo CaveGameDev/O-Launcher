@@ -13,6 +13,14 @@ window.onload = function() {
         });
     }
 
+    if (typeof window.ModLoader !== 'undefined' && typeof ModLoader.boot === 'function') {
+        // The mod engine owns the boot gate: it waits for the player to click
+        // LAUNCH, applies any staged mods into the VFS and $plugins, then
+        // starts the game with the modded data already in place.
+        ModLoader.boot(startGame);
+        return;
+    }
+
     if (typeof ZipLoader !== 'undefined' && ZipLoader.init) {
         // Extraction finishing only makes Launch available. The game must not
         // boot until the player explicitly clicks that button.
