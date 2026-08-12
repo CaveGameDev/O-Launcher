@@ -199,6 +199,12 @@ LanguageManager.loadLanguageFiles = function(language) {
     console.log('Loading ' + fileList.length + ' language files for ' + language + ' from ZipLoader VFS');
     for (var i = 0; i < fileList.length; i++) {
       var file = fileList[i];
+      // The web archive stores language files lowercased, but the game keys
+      // them by their original desktop casing (XX_BLUE, System, Bestiary, …).
+      // Canonicalize so getMessageData("XX_BLUE.…") lookups resolve.
+      if (window.OVFS && typeof window.OVFS.canonicalLanguageFile === 'function') {
+        file = window.OVFS.canonicalLanguageFile(file);
+      }
       var filename = file.replace('.yaml', '');
       var filePath = 'languages/' + language + '/' + file;
       try {
