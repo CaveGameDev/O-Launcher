@@ -35,9 +35,23 @@
     var _accountId = 'default';
     var _manifest; // undefined = not loaded yet, null = unavailable, object = parsed
 
+    // Route progress to a per-asset bar so concurrent image/audio downloads
+    // don't fight over one fill width + label. Channels: 'main' (data/maps/
+    // languages/boot), 'images', 'audio'.
+    var PROGRESS_IDS = {
+        main:   ['zipProgressFill', 'zipProgressLabel'],
+        images: ['zipProgressImageFill', 'zipProgressImageLabel'],
+        audio:  ['zipProgressAudioFill', 'zipProgressAudioLabel']
+    };
+
     function progress(percent, label) {
-        var fill = document.getElementById('zipProgressFill');
-        var text = document.getElementById('zipProgressLabel');
+        progressChannel('main', percent, label);
+    }
+
+    function progressChannel(channel, percent, label) {
+        var ids = PROGRESS_IDS[channel] || PROGRESS_IDS.main;
+        var fill = document.getElementById(ids[0]);
+        var text = document.getElementById(ids[1]);
         if (fill) fill.style.width = Math.max(0, Math.min(100, Math.round(percent))) + '%';
         if (text) text.textContent = label || '';
     }
@@ -120,23 +134,23 @@
         return 'application/octet-stream';
     }
 
-    function updateByteProgress(done, total, start, span, label) {
+    function updateByteProgress(done, total, start, span, label, channel) {
         var fraction = total > 0 ? Math.min(1, done / total) : 0;
-        progress(start + fraction * span, label + ' (' +
+        progressChannel(channel, start + fraction * span, label + ' (' +
             Math.round(done / 1048576 * 10) / 10 + ' MB)');
     }
 
     // NOTE: no cache:'no-store' here. When the server sends cache headers the
     // browser HTTP cache can serve parts directly; correctness of the asset
     // version is handled by manifest.json (or per-part HEAD verification).
-    function fetchBytes(url, start, span, label) {
+    function fetchBytes(url, start, span, label, channel) {
         if (!_origFetch) return Promise.reject(new Error('Fetch is unavailable.'));
         return _origFetch(url).then(function(response) {
             if (!response.ok) throw new Error('HTTP ' + response.status + ' for ' + url);
             var total = Number(response.headers.get('content-length')) || 0;
             if (!response.body || !response.body.getReader) {
                 return response.arrayBuffer().then(function(buffer) {
-                    updateByteProgress(buffer.byteLength, total || buffer.byteLength, start, span, label);
+                    updateByteProgress(buffer.byteLength, total || buffer.byteLength, start, span, label, channel);
                     return new Uint8Array(buffer);
                 });
             }
@@ -152,12 +166,12 @@
                             result.set(chunk, offset);
                             offset += chunk.length;
                         });
-                        updateByteProgress(loaded, total || loaded, start, span, label);
+                        updateByteProgress(loaded, total || loaded, start, span, label, channel);
                         return result;
                     }
                     chunks.push(part.value);
                     loaded += part.value.byteLength;
-                    updateByteProgress(loaded, total, start, span, label);
+                    updateByteProgress(loaded, total, start, span, label, channel);
                     return read();
                 });
             }
@@ -175,7 +189,7 @@
                 while (active < CONCURRENCY && index < items.length) {
                     (function(i) {
                         active++;
-                        fetchBytes(items[i].url, items[i].start, items[i].span, items[i].label).then(function(bytes) {
+                        fetchBytes(items[i].url, items[i].start, items[i].span, items[i].label, items[i].channel).then(function(bytes) {
                             results[i] = bytes;
                             active--;
                             if (index < items.length) pump();
@@ -575,7 +589,7 @@
     }
 
     // ---- download / cache orchestration --------------------------------------
-    function downloadArchive(desc, start, span, label, expected) {
+    function downloadArchive(desc, start, span, label, expected, channel) {
         var base = archiveBaseUrl(desc);
         var folder = desc.folder ? base + '/' + desc.folder : base;
         var items = [];
@@ -586,7 +600,8 @@
                 url: folder ? folder + '/' + fileName : fileName,
                 start: start + span * (i / desc.count),
                 span: span / desc.count,
-                label: label + ' part ' + (i + 1) + '/' + desc.count
+                label: label + ' part ' + (i + 1) + '/' + desc.count,
+                channel: channel
             });
         }
         var t0 = performance.now();
@@ -610,7 +625,7 @@
             console.log('ZipLoader: [' + label + '] downloaded ' + (total / 1048576).toFixed(1) +
                 ' MB in ' + (performance.now() - t0).toFixed(0) + ' ms');
             return addZipFiles(combined, label).then(function() {
-                progress(start + span, label + ' ready');
+                progressChannel(channel, start + span, label + ' ready');
                 if (_cacheEnabled) {
                     cachePutArchive(desc.name, combined);
                     if (expected) cachePutMeta(desc.name, expected);
@@ -620,10 +635,10 @@
         });
     }
 
-    function loadArchiveCached(desc, start, span, label) {
+    function loadArchiveCached(desc, start, span, label, channel) {
         return ensureMeta(desc).then(function(expected) {
             if (!_cacheEnabled || !expected) {
-                return downloadArchive(desc, start, span, label, expected);
+                return downloadArchive(desc, start, span, label, expected, channel);
             }
             var t0 = performance.now();
             return cacheGetMeta(desc.name).then(function(cached) {
@@ -634,16 +649,16 @@
                             console.log('ZipLoader: [' + label + '] cache hit (' +
                                 (bytes.length / 1048576).toFixed(1) + ' MB, v' + expected.version +
                                 ', read in ' + (performance.now() - t0).toFixed(0) + ' ms)');
-                            progress(start + span * 0.9, label + ' from cache...');
+                            progressChannel(channel, start + span * 0.9, label + ' from cache...');
                             return addZipFiles(bytes, label + ' (cache)').then(function() {
-                                progress(start + span, label + ' ready (cache)');
+                                progressChannel(channel, start + span, label + ' ready (cache)');
                                 return true;
                             });
                         }
-                        return downloadArchive(desc, start, span, label, expected);
+                        return downloadArchive(desc, start, span, label, expected, channel);
                     });
                 }
-                return downloadArchive(desc, start, span, label, expected);
+                return downloadArchive(desc, start, span, label, expected, channel);
             });
         });
     }
@@ -808,22 +823,24 @@
             progress(1, 'Account: ' + _accountId);
 
             var languagesFailed = false;
+            // Core data (data/maps/languages) share the main bar; images and
+            // audio get their own bars so concurrent downloads don't collide.
             var jobs = [
-                loadArchiveCached(descWithManifest({ name: 'data.zip', folder: '', count: 1, pad: 0 }), 2, 6, 'data.zip'),
-                loadArchiveCached(descWithManifest({ name: 'maps.zip', folder: '', count: 1, pad: 0 }), 8, 6, 'maps.zip'),
+                loadArchiveCached(descWithManifest({ name: 'data.zip', folder: '', count: 1, pad: 0 }), 0, 33, 'data.zip', 'main'),
+                loadArchiveCached(descWithManifest({ name: 'maps.zip', folder: '', count: 1, pad: 0 }), 33, 33, 'maps.zip', 'main'),
                 // languages.zip is extracted here, BEFORE launch, so the ~210
                 // language YAML reads during plugin setup are served from the
                 // VFS instead of one blocking XHR each. Failure is non-fatal
                 // (older deployments without the zip still boot) but is surfaced
                 // loudly so a missing upload can't hide behind the LAUNCH button.
-                loadArchiveCached(descWithManifest({ name: 'languages.zip', folder: '', count: 1, pad: 0 }), 14, 6, 'languages').catch(function(error) {
+                loadArchiveCached(descWithManifest({ name: 'languages.zip', folder: '', count: 1, pad: 0 }), 66, 34, 'languages', 'main').catch(function(error) {
                     languagesFailed = true;
                     console.error('ZipLoader: languages.zip failed to load (' + error.message + '). ' +
                         'Upload it next to the archives (project root / baseUrl); language text will be unavailable.');
                     return false;
                 }),
-                loadArchiveCached(descWithManifest({ name: 'img_repk.zip', folder: 'img_pack', count: 55, pad: 2 }), 20, 36, 'images'),
-                loadArchiveCached(descWithManifest({ name: 'audio_repk.zip', folder: 'aud_pack', count: 111, pad: 3 }), 56, 44, 'audio')
+                loadArchiveCached(descWithManifest({ name: 'img_repk.zip', folder: 'img_pack', count: 55, pad: 2 }), 0, 100, 'images', 'images'),
+                loadArchiveCached(descWithManifest({ name: 'audio_repk.zip', folder: 'aud_pack', count: 111, pad: 3 }), 0, 100, 'audio', 'audio')
             ];
             await Promise.all(jobs);
 
