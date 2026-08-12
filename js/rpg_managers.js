@@ -2817,6 +2817,17 @@ PluginManager.setup = function(plugins) {
 
 PluginManager.loadScript = function(name) {
     var url = this._path + name;
+    // Mods overlay js/plugins/* into the browser VFS. When a plugin is present
+    // there (a modded or mod-patched plugin), execute it from a Blob URL with
+    // the same global scope and ordered-by-promise semantics as on-disk
+    // plugins, without a network request.
+    var vfsText = null;
+    if (typeof ZipLoader !== 'undefined' && ZipLoader.getText) {
+        vfsText = ZipLoader.getText(url);
+    }
+    if (vfsText != null) {
+        return this._loadScriptFromBlob(name, url, vfsText);
+    }
     var script = document.createElement('script');
     script.type = 'text/javascript';
     script.src = url;
@@ -2827,6 +2838,28 @@ PluginManager.loadScript = function(name) {
             resolve(script);
         };
         script.onerror = function(event) {
+            PluginManager.onError(event);
+            reject(new Error('Failed to load: ' + url));
+        };
+        document.body.appendChild(script);
+    });
+};
+
+PluginManager._loadScriptFromBlob = function(name, url, code) {
+    var blob = new Blob([code], { type: 'text/javascript' });
+    var blobUrl = URL.createObjectURL(blob);
+    var script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = blobUrl;
+    script.async = false;
+    script._url = url;
+    return new Promise(function(resolve, reject) {
+        script.onload = function() {
+            URL.revokeObjectURL(blobUrl);
+            resolve(script);
+        };
+        script.onerror = function(event) {
+            URL.revokeObjectURL(blobUrl);
             PluginManager.onError(event);
             reject(new Error('Failed to load: ' + url));
         };
