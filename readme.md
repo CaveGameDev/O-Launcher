@@ -1,6 +1,6 @@
 ![OMORI](icon/icon.png)
 
-# OMORI Browser Port
+# OMORI Browser Port (MODLOADER)
 
 This is the RPG Maker MV game **OMORI**, running entirely in the browser. Just uhh serve the folder and play, you can also open the live site at `omor-1.pages.dev`.
 
@@ -27,7 +27,7 @@ Open `http://localhost:8080`. On the first visit it downloads and caches the ass
 - **Caching** — assets download once, then later visits load instantly.
 - **Mobile controls** — an on-screen D-pad and action buttons appear on touch devices.
 - **Boot self-check** — if a script or asset fails to load, the page tells you exactly what went wrong instead of going blank.
-- **Moddable** so try! Now Accepts omori mod zips! (oneloader and more)
+- **Moddable** so try! Now Accepts omori mod zips! (FIRST EVER WEBPORT WITH MODLAUCNHER!)
 
 ## Limitations
 
