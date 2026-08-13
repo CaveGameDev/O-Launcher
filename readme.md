@@ -2,9 +2,13 @@
 
 # OMORI Browser Port (WITH MODLOADER)
 
-This is the RPG Maker MV game **OMORI**, running entirely in the browser. Just uhh serve the folder and play, you can also open the live site at `omor-1.pages.dev`.
+This is the RPG Maker MV game **OMORI**, running entirely in the browser. Just uhh serve the folder and play, you can also open the live site at `https://o-launcher-1-cwxeuubz8-omoweb.vercel.app/`.
 
-It's a port of the original desktop (NW.js) release. Everything the game relied on from the desktop shell reading, files, saving, the Steam API, the window chrome, has been replaced with browser equivalents, so it runs on any modern browser, desktop or mobile.
+Runs on any modern browser, desktop or mobile.
+
+This version contains a custom mod loader made specifically for this project, along with custom YAML parsing, making this accept *MOST* mods from `Mods.one`
+
+This cannot be compiled to a smaller build for deployment purposes, as every Plugin must be rewritable and available for modloader to work.
 
 ## Run it
 
