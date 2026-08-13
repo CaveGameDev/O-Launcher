@@ -1,6 +1,6 @@
 ![OMORI](icon/icon.png)
 
-# OMORI Browser Port (WITH MODLOADER)
+# OMORI Browser Port (WITH MODLOADER) nocache
 
 This is the RPG Maker MV game **OMORI**, running entirely in the browser. Just uhh serve the folder and play, you can also open the live site at `omor-1.pages.dev`.
 
