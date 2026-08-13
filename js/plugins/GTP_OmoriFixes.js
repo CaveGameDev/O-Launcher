@@ -132,6 +132,7 @@ Gamefall.OmoriFixes = Gamefall.OmoriFixes || {};
 	        if (align === 'right') { tx += maxWidth; }
 	        context.save();
 	        context.font = this._makeFontNameText();
+			context.textAlign = align;
 	        context.textBaseline = 'alphabetic';
 	        context.globalAlpha = 1;
 	        this._drawTextOutline(text, tx, ty, maxWidth);
