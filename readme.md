@@ -31,7 +31,7 @@ Open `http://localhost:8080`. On the first visit it downloads and caches the ass
 - **Caching** — assets download once, then later visits load instantly.
 - **Mobile controls** — an on-screen D-pad and action buttons appear on touch devices.
 - **Boot self-check** — if a script or asset fails to load, the page tells you exactly what went wrong instead of going blank.
-- **Moddable** so try! Now Accepts omori mod zips! (FIRST EVER WEBPORT WITH MODLAUCNHER!)
+- **Moddable** so try! Now Accepts omori mod zips! (FIRST EVER WEBPORT WITH MODLAUNCHER!)
 
 ## Limitations
 
