@@ -2,7 +2,7 @@
 
 # OMORI Browser Port (WITH MODLOADER)
 
-This is the RPG Maker MV game **OMORI**, running entirely in the browser. Just uhh serve the folder and play, you can also open the live site at `https://o-launcher-1-cwxeuubz8-omoweb.vercel.app/`.
+This is the RPG Maker MV game **OMORI**, running entirely in the browser. Just uhh serve the folder and play, you can also open the live site at `o-launcher-1-kp8vd7vkk-omoweb.vercel.app`.
 
 Runs on any modern browser, desktop or mobile.
 
