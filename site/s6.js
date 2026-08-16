@@ -7,6 +7,23 @@
                         super(typeof data === 'string' ? new TextEncoder().encode(data) : data);
                     }
                     static from(data) { return new Uint8Array(typeof data === 'string' ? new TextEncoder().encode(data) : data); }
+                    static concat(list, totalLength) {
+                        if (!Array.isArray(list)) list = Array.prototype.slice.call(list);
+                        var total = totalLength;
+                        if (total === undefined || total === null) {
+                            total = 0;
+                            for (var bi = 0; bi < list.length; bi++) total += list[bi] ? list[bi].length : 0;
+                        }
+                        var out = new Uint8Array(total);
+                        var off = 0;
+                        for (var bj = 0; bj < list.length; bj++) {
+                            var b = list[bj];
+                            if (!b) continue;
+                            out.set(b, off);
+                            off += b.length;
+                        }
+                        return new Buffer(out);
+                    }
                     toString() { return new TextDecoder('utf-8').decode(this); }
                 };
             }
@@ -36,7 +53,15 @@
                         },
                         readFileSync: function(path, options) {
                             var vfs = window.OVFS;
-                            return vfs ? vfs.readTextSync(path) : '';
+                            if (!vfs) return '';
+                            var enc = typeof options === 'string' ? options : (options && options.encoding);
+                            if (enc && /utf-?8/i.test(String(enc))) return vfs.readTextSync(path);
+                            // No encoding requested -> Node returns a Buffer (bytes).
+                            if (vfs.readBytes) {
+                                var bytes = vfs.readBytes(path);
+                                if (bytes && bytes.length) return typeof Buffer !== 'undefined' ? Buffer.from(bytes) : bytes;
+                            }
+                            return vfs.readTextSync(path);
                         },
                         existsSync: function(path) {
                             var vfs = window.OVFS;
@@ -50,11 +75,11 @@
                         writeFileSync: function(path, data) {
                             var vfs = window.OVFS;
                             if (!vfs) return;
-                            var strData = data;
                             if (data instanceof Uint8Array || (typeof Buffer !== 'undefined' && data instanceof Buffer)) {
-                                strData = new TextDecoder('utf-8').decode(data);
+                                if (vfs.writeBytes) { vfs.writeBytes(path, data); return; }
+                                data = new TextDecoder('utf-8').decode(data);
                             }
-                            vfs.write(path, strData);
+                            vfs.write(path, String(data));
                         },
                         writeFile: function(path, data, callback) {
                             this.writeFileSync(path, data);
@@ -71,8 +96,170 @@
                             if (typeof callback === 'function') {
                                 setTimeout(function() { callback(null, content); }, 0);
                             }
+                        },
+                        readdir: function(dirPath, callback) {
+                            var list = this.readdirSync(dirPath);
+                            if (typeof callback === 'function') setTimeout(function() { callback(null, list); }, 0);
+                            return list;
+                        },
+                        statSync: function(path) {
+                            var vfs = window.OVFS;
+                            var isDir = !!(vfs && vfs.list && vfs.list(path).length > 0);
+                            var bytes = (vfs && vfs.readBytes) ? vfs.readBytes(path) : null;
+                            return {
+                                isFile: function() { return !isDir; },
+                                isDirectory: function() { return isDir; },
+                                isSymbolicLink: function() { return false; },
+                                size: bytes ? bytes.length : 0,
+                                mtimeMs: Date.now(),
+                                mode: 33206
+                            };
+                        },
+                        stat: function(path, callback) {
+                            var st = this.statSync(path);
+                            if (typeof callback === 'function') setTimeout(function() { callback(null, st); }, 0);
+                            return st;
+                        },
+                        lstatSync: function(path) { return this.statSync(path); },
+                        lstat: function(path, callback) { return this.stat(path, callback); },
+                        renameSync: function(oldPath, newPath) {
+                            var vfs = window.OVFS;
+                            if (!vfs) return;
+                            var bytes = vfs.readBytes ? vfs.readBytes(oldPath) : null;
+                            if (bytes && bytes.length) {
+                                if (vfs.writeBytes) vfs.writeBytes(newPath, bytes);
+                                else vfs.write(newPath, new TextDecoder('utf-8').decode(bytes));
+                            } else {
+                                vfs.write(newPath, vfs.readTextSync(oldPath));
+                            }
+                            vfs.remove(oldPath);
+                        },
+                        rename: function(oldPath, newPath, callback) {
+                            try {
+                                this.renameSync(oldPath, newPath);
+                                if (typeof callback === 'function') setTimeout(function() { callback(null); }, 0);
+                            } catch (e) {
+                                if (typeof callback === 'function') setTimeout(function() { callback(e); }, 0);
+                                else throw e;
+                            }
+                        },
+                        appendFileSync: function(path, data) {
+                            var vfs = window.OVFS;
+                            if (!vfs) return;
+                            var cur = vfs.readTextSync(path) || '';
+                            var add = (data instanceof Uint8Array || (typeof Buffer !== 'undefined' && data instanceof Buffer))
+                                ? new TextDecoder('utf-8').decode(data) : String(data == null ? '' : data);
+                            vfs.write(path, cur + add);
+                        },
+                        appendFile: function(path, data, callback) {
+                            if (typeof data === 'function') { callback = data; data = ''; }
+                            try { this.appendFileSync(path, data); if (typeof callback === 'function') setTimeout(function() { callback(null); }, 0); }
+                            catch (e) { if (typeof callback === 'function') setTimeout(function() { callback(e); }, 0); else throw e; }
                         }
                     };
+                }
+                if (cleanMod === 'util' || cleanMod === 'node:util') {
+                    return {
+                        promisify: function(fn) {
+                            return function() {
+                                var args = [].slice.call(arguments);
+                                return new Promise(function(resolve, reject) {
+                                    args.push(function(err, value) {
+                                        if (err) reject(err instanceof Error ? err : new Error(String(err)));
+                                        else resolve(value);
+                                    });
+                                    try { fn.apply(this, args); } catch (e) { reject(e); }
+                                });
+                            };
+                        },
+                        callbackify: function(fn) {
+                            return function() {
+                                var args = [].slice.call(arguments);
+                                var cb = typeof args[args.length - 1] === 'function' ? args.pop() : null;
+                                var out;
+                                try { out = fn.apply(this, args); } catch (e) { if (cb) { cb(e); return; } throw e; }
+                                if (out && typeof out.then === 'function') {
+                                    out.then(function(v) { if (cb) cb(null, v); }, function(e) { if (cb) cb(e); });
+                                } else if (cb) {
+                                    cb(null, out);
+                                }
+                                return out;
+                            };
+                        },
+                        inherits: function(ctor, superCtor) {
+                            if (Object.setPrototypeOf) Object.setPrototypeOf(ctor.prototype, superCtor.prototype);
+                            else ctor.prototype = Object.create(superCtor.prototype);
+                            ctor.super_ = superCtor;
+                        },
+                        format: function(fmt) {
+                            var args = [].slice.call(arguments, 1);
+                            if (typeof fmt !== 'string') return [fmt].concat(args).join(' ');
+                            return String(fmt).replace(/%[sdjifoO%]/g, function(m) {
+                                if (m === '%%') return '%';
+                                var v = args.shift();
+                                if (m === '%j') return JSON.stringify(v);
+                                return String(v);
+                            });
+                        },
+                        isArray: Array.isArray,
+                        isString: function(v) { return typeof v === 'string'; },
+                        isNumber: function(v) { return typeof v === 'number'; },
+                        isBoolean: function(v) { return typeof v === 'boolean'; },
+                        isObject: function(v) { return v !== null && typeof v === 'object'; },
+                        isFunction: function(v) { return typeof v === 'function'; },
+                        isNullOrUndefined: function(v) { return v === null || v === undefined; },
+                        types: {}
+                    };
+                }
+                if (cleanMod === 'zlib' || cleanMod === 'node:zlib') {
+                    function zlibEngine() {
+                        return window.fflate || (typeof fflate !== 'undefined' ? fflate : null);
+                    }
+                    function inflateBytes(buf) {
+                        var z = zlibEngine();
+                        var u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+                        if (!z) return u8;
+                        if (typeof z.unzlibSync === 'function') return z.unzlibSync(u8);
+                        if (typeof z.inflateSync === 'function') return z.inflateSync(u8);
+                        return u8;
+                    }
+                    function deflateBytes(buf, level) {
+                        var z = zlibEngine();
+                        var u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+                        if (!z) return u8;
+                        if (typeof z.zlibSync === 'function') return z.zlibSync(u8, { level: level });
+                        if (typeof z.deflateSync === 'function') return z.deflateSync(u8, { level: level });
+                        return u8;
+                    }
+                    function asyncWrap(fn) {
+                        return function(buf, options, callback) {
+                            if (typeof options === 'function') { callback = options; options = undefined; }
+                            var out;
+                            try { out = fn(buf, options); } catch (e) { if (typeof callback === 'function') setTimeout(function() { callback(e); }, 0); return out; }
+                            if (typeof callback === 'function') setTimeout(function() { callback(null, out); }, 0);
+                            return out;
+                        };
+                    }
+                    return {
+                        inflateSync: inflateBytes,
+                        unzlibSync: inflateBytes,
+                        gunzipSync: inflateBytes,
+                        inflateRawSync: inflateBytes,
+                        deflateSync: deflateBytes,
+                        zlibSync: deflateBytes,
+                        gzipSync: deflateBytes,
+                        deflateRawSync: deflateBytes,
+                        inflate: asyncWrap(inflateBytes),
+                        unzlib: asyncWrap(inflateBytes),
+                        gunzip: asyncWrap(inflateBytes),
+                        deflate: asyncWrap(deflateBytes),
+                        zlib: asyncWrap(deflateBytes),
+                        gzip: asyncWrap(deflateBytes),
+                        constants: {}
+                    };
+                }
+                if (cleanMod === 'process' || cleanMod === 'node:process') {
+                    return window.process || {};
                 }
                 if (cleanMod === 'path') {
                     return {
@@ -88,6 +275,20 @@
                             var b = String(p).split('/').pop() || '';
                             var i = b.lastIndexOf('.');
                             return i > 0 ? b.slice(i) : '';
+                        },
+                        parse: (p) => {
+                            var s = String(p).replace(/\\/g, '/');
+                            var isAbs = s.charAt(0) === '/';
+                            var parts = s.split('/');
+                            var base = parts.pop() || '';
+                            var ext = '';
+                            var name = base;
+                            var extIdx = base.lastIndexOf('.');
+                            if (extIdx > 0) { ext = base.slice(extIdx); name = base.slice(0, extIdx); }
+                            var dir = parts.join('/');
+                            if (isAbs) dir = '/' + dir.replace(/^\/+/, '');
+                            if (dir === '') dir = isAbs ? '/' : '.';
+                            return { root: isAbs ? '/' : '', dir: dir, base: base, ext: ext, name: name };
                         },
                         normalize: (p) => String(p).replace(/\\/g, '/').replace(/\/+/g, '/').replace(/^\.\//, ''),
                         resolve: (...args) => args.filter(Boolean).join('/').replace(/\/+/g, '/').replace(/^\/+/, '/'),
@@ -299,6 +500,38 @@
                         safeLoad: function(yamlString) {
                             return this.load(yamlString);
                         }
+                    };
+                }
+                if (cleanMod === 'crypto' || cleanMod === 'node:crypto') {
+                    // Browser-safe Node `crypto` stub. Desktop mods use this for
+                    // decrypting encrypted plugin payloads, which aren't shipped
+                    // in the browser build — return empty data instead of
+                    // throwing at plugin load time.
+                    function cryptoStream() {
+                        return {
+                            update: function() { return new Uint8Array(0); },
+                            final: function() { return new Uint8Array(0); },
+                            setAutoPadding: function() { return this; }
+                        };
+                    }
+                    return {
+                        createDecipheriv: cryptoStream,
+                        createCipheriv: cryptoStream,
+                        createDecipher: cryptoStream,
+                        createCipher: cryptoStream,
+                        createHash: function() {
+                            return { update: function() { return this; }, digest: function() { return new Uint8Array(0); } };
+                        },
+                        createHmac: function() {
+                            return { update: function() { return this; }, digest: function() { return new Uint8Array(0); } };
+                        },
+                        randomBytes: function(size) { return new Uint8Array(size | 0); },
+                        randomUUID: function() { return '00000000-0000-4000-8000-000000000000'; },
+                        getRandomValues: function(arr) {
+                            if (window.crypto && typeof window.crypto.getRandomValues === 'function') return window.crypto.getRandomValues(arr);
+                            return arr;
+                        },
+                        timingSafeEqual: function(a, b) { return !!(a && b && a.length === b.length); }
                     };
                 }
                 return {};
