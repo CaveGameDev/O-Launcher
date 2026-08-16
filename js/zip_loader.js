@@ -27,6 +27,11 @@
     var _origSend = XMLHttpRequest.prototype.send;
     var _bitmapHookPrototype = null;
     var _graphicsHookTarget = null;
+    // A fully transparent 48x48 PNG used as a stand-in when a referenced image
+    // is absent from the asset pack. Loading this instead of failing keeps the
+    // bitmap in a completed state, so a missing sprite renders as invisible
+    // rather than leaving a scene stuck on a black screen.
+    var TRANSPARENT_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAH0lEQVR42u3BAQEAAACCIP+vbkhAAQAAAAAAAAAALwYkMAABdG+8JQAAAABJRU5ErkJggg==';
 
     // ---- config / account ---------------------------------------------------
     var CONCURRENCY = 6;
@@ -34,6 +39,9 @@
     var _config = { baseUrl: '', useRemoteParts: false, accountId: '', concurrency: '6', cacheEnabled: true };
     var _accountId = 'default';
     var _manifest; // undefined = not loaded yet, null = unavailable, object = parsed
+    // Native desktop shell (Tauri). External asset part folders are read from
+    // next to the executable through the IPC bridge (see fetchExternalPart).
+    var _isTauri = typeof window.__TAURI__ !== 'undefined' && !!window.__TAURI__;
 
     // Route progress to a per-asset bar so concurrent image/audio downloads
     // don't fight over one fill width + label. Channels: 'main' (data/maps/
@@ -64,6 +72,16 @@
     function hideProgress() {
         var bar = document.getElementById('zipProgress');
         if (bar) bar.style.display = 'none';
+    }
+
+    // Once every archive is ready, hide the loading bars/labels and leave only
+    // the LAUNCH button and the mod uploader visible.
+    function hideProgressBars() {
+        ['zipProgressHeader', 'zipProgressMainBar', 'zipProgressLabel',
+            'zipProgressImages', 'zipProgressAudio'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
     }
 
     function showLaunchButton() {
@@ -140,10 +158,59 @@
             Math.round(done / 1048576 * 10) / 10 + ' MB)');
     }
 
+    // Native desktop build (Tauri v2): external img_pack/aud_pack parts are
+    // served as raw bytes over a custom `omori://` URI scheme, which WebView2
+    // accepts through fetch(). The base64 IPC command is kept only as a
+    // fallback for WebView builds where the custom scheme is unavailable.
+    var ASSET_SCHEME = 'omori';
+
+    function isExternalPartUrl(url) {
+        var p = normalizePath(url);
+        return p.indexOf('img_pack/') === 0 || p.indexOf('aud_pack/') === 0;
+    }
+
+    function externalPartUrl(url) {
+        return ASSET_SCHEME + '://localhost/' + normalizePath(url);
+    }
+
+    var _assetTransportWarned = false;
+    function fetchExternalPart(url, start, span, label, channel) {
+        var rel = normalizePath(url);
+        var finish = function(bytes) {
+            updateByteProgress(bytes.length, bytes.length, start, span, label, channel);
+            return bytes;
+        };
+        return _origFetch(externalPartUrl(url)).then(function(response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status + ' for ' + rel);
+            return response.arrayBuffer();
+        }).then(function(buffer) {
+            return finish(new Uint8Array(buffer));
+        }).catch(function(schemeError) {
+            if (!_assetTransportWarned) {
+                _assetTransportWarned = true;
+                console.warn('ZipLoader: custom scheme fetch failed (' + (schemeError && schemeError.message) +
+                    '); falling back to base64 IPC — asset loading will be slower.');
+            }
+            // Fallback: base64 over IPC (slower but universally available).
+            return window.__TAURI__.core.invoke('read_asset_file', { path: rel }).then(function(b64) {
+                if (typeof b64 !== 'string' || !b64) {
+                    throw schemeError || new Error('empty asset response for ' + rel);
+                }
+                var bin = atob(b64);
+                var bytes = new Uint8Array(bin.length);
+                for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                return finish(bytes);
+            });
+        });
+    }
+
     // NOTE: no cache:'no-store' here. When the server sends cache headers the
     // browser HTTP cache can serve parts directly; correctness of the asset
     // version is handled by manifest.json (or per-part HEAD verification).
     function fetchBytes(url, start, span, label, channel) {
+        if (_isTauri && isExternalPartUrl(url)) {
+            return fetchExternalPart(url, start, span, label, channel);
+        }
         if (!_origFetch) return Promise.reject(new Error('Fetch is unavailable.'));
         return _origFetch(url).then(function(response) {
             if (!response.ok) throw new Error('HTTP ' + response.status + ' for ' + url);
@@ -239,8 +306,13 @@
     function applyConfig(config) {
         _config = config || _config;
         var c = parseInt(_config.concurrency, 10);
-        if (c >= 1 && c <= 16) CONCURRENCY = c;
+        if (c >= 1 && c <= 32) CONCURRENCY = c;
+        else if (_isTauri) CONCURRENCY = 16; // local disk reads parallelize well
         _cacheEnabled = _config.cacheEnabled !== false;
+        // Native build: img/audio parts are local files read straight off the
+        // disk through the custom protocol, so mirroring them into IndexedDB
+        // would just duplicate ~1.6 GB of data for no benefit.
+        if (_isTauri) _cacheEnabled = false;
     }
 
     function resolveAccountId() {
@@ -455,31 +527,95 @@
     }
 
     // ---- VFS population -------------------------------------------------------
-    function addZipFiles(bytes, label) {
+    function combinePieces(pieces) {
+        var total = 0;
+        for (var i = 0; i < pieces.length; i++) total += pieces[i].length;
+        var out = new Uint8Array(total);
+        var off = 0;
+        for (var j = 0; j < pieces.length; j++) {
+            out.set(pieces[j], off);
+            off += pieces[j].length;
+        }
+        return out;
+    }
+
+    // Stream an archive through fflate.Unzip, feeding each downloaded part in
+    // order. This avoids concatenating all parts into one ~1.6 GB buffer and
+    // building a full decompressed `files` object: each file is committed to the
+    // VFS as soon as it's extracted, so peak memory (and GC pauses) stay far
+    // lower than the one-shot fflate.unzip path.
+    function addZipFilesPieces(pieces, label) {
         return new Promise(function(resolve, reject) {
-            // fflate's async unzip keeps extraction off the synchronous boot
-            // call stack while still completing before the corresponding VFS
-            // request is released.
-            fflate.unzip(bytes, function(error, files) {
-                if (error) {
-                    reject(new Error('Could not unzip ' + label + ': ' + error.message));
+            var pending = 0;
+            var finished = false;
+            var count = 0;
+            var firstError = null;
+            function maybeDone() {
+                if (!finished || pending > 0) return;
+                if (firstError) {
+                    reject(new Error('Could not unzip ' + label + ': ' + (firstError.message || firstError)));
+                } else {
+                    console.log('ZipLoader: extracted ' + count + ' files from ' + label);
+                    resolve(count);
+                }
+            }
+            var unzipper = new fflate.Unzip(function(file) {
+                if (!file.name || /\/$/.test(file.name)) {
+                    // Directory entry: consume it so the decoder advances, but
+                    // store nothing.
+                    file.ondata = function() {};
+                    file.start();
                     return;
                 }
-                var count = 0;
-                Object.keys(files).forEach(function(name) {
-                    if (!name || /\/$/.test(name)) return;
-                    var normalized = normalizePath(name);
-                    var fileBytes = files[name];
-                    _vfs[normalized] = fileBytes;
-                    // Use the same decoded/case-folded key as bytesFor() so
-                    // encoded names and normal names resolve identically.
-                    _vfsInsensitive[lookupPath(normalized).insensitive] = normalized;
-                    count++;
-                });
-                console.log('ZipLoader: extracted ' + count + ' files from ' + label);
-                resolve(count);
+                pending++;
+                var normalized = normalizePath(file.name);
+                var chunks = [];
+                var total = 0;
+                var done = false;
+                file.ondata = function(err, data, final) {
+                    if (done) return;
+                    if (err && !firstError) firstError = err;
+                    if (data && data.length && !firstError) {
+                        chunks.push(data);
+                        total += data.length;
+                    }
+                    if (final || err) {
+                        done = true;
+                        if (!firstError) {
+                            var out = new Uint8Array(total);
+                            var off = 0;
+                            for (var i = 0; i < chunks.length; i++) {
+                                out.set(chunks[i], off);
+                                off += chunks[i].length;
+                            }
+                            _vfs[normalized] = out;
+                            // Same decoded/case-folded key as bytesFor() so
+                            // encoded names resolve identically.
+                            _vfsInsensitive[lookupPath(normalized).insensitive] = normalized;
+                            count++;
+                        }
+                        pending--;
+                        maybeDone();
+                    }
+                };
+                file.start();
             });
+            // fflate.Unzip only pre-registers the STORED decoder; register the
+            // DEFLATE decoder too (sync for small entries, worker for large).
+            unzipper.register(fflate.AsyncUnzipInflate);
+            try {
+                for (var i = 0; i < pieces.length; i++) unzipper.push(pieces[i], false);
+                unzipper.push(new Uint8Array(0), true);
+            } catch (e) {
+                if (!firstError) firstError = e;
+            }
+            finished = true;
+            maybeDone();
         });
+    }
+
+    function addZipFiles(bytes, label) {
+        return addZipFilesPieces([bytes], label);
     }
 
     function lookupPath(path) {
@@ -606,28 +742,29 @@
         }
         var t0 = performance.now();
         return fetchQueue(items).then(function(pieces) {
-            // Sanity-check downloaded sizes against the expected metadata. A
-            // mismatch means the assets changed: bump manifest.json's version.
+            // Sanity-check downloaded sizes against the expected metadata, but
+            // never fail boot over it: embedded/bundled assets are served from
+            // whatever the binary actually contains, so use those bytes and only
+            // warn when the manifest's declared sizes are stale.
             if (expected && expected.parts && expected.parts.length === pieces.length) {
                 for (var j = 0; j < pieces.length; j++) {
                     if (expected.parts[j].size && pieces[j].length !== expected.parts[j].size) {
-                        throw new Error(label + ' part ' + (j + 1) + ' size mismatch (' +
-                            pieces[j].length + ' != ' + expected.parts[j].size +
-                            '); assets changed? bump manifest.json version.');
+                        console.warn('ZipLoader: ' + label + ' part ' + (j + 1) + ' size differs from manifest (' +
+                            pieces[j].length + ' != ' + expected.parts[j].size + '); using the fetched bytes.');
                     }
                 }
             }
             var total = 0;
             pieces.forEach(function(p) { total += p.length; });
-            var combined = new Uint8Array(total);
-            var offset = 0;
-            pieces.forEach(function(p) { combined.set(p, offset); offset += p.length; });
             console.log('ZipLoader: [' + label + '] downloaded ' + (total / 1048576).toFixed(1) +
                 ' MB in ' + (performance.now() - t0).toFixed(0) + ' ms');
-            return addZipFiles(combined, label).then(function() {
+            // Stream the parts straight into the unzip decoder (no full
+            // concatenation). A combined buffer is only assembled for the
+            // IndexedDB cache, which the native build never uses.
+            return addZipFilesPieces(pieces, label).then(function() {
                 progressChannel(channel, start + span, label + ' ready');
                 if (_cacheEnabled) {
-                    cachePutArchive(desc.name, combined);
+                    cachePutArchive(desc.name, combinePieces(pieces));
                     if (expected) cachePutMeta(desc.name, expected);
                 }
                 return true;
@@ -776,8 +913,14 @@
                 originalRequest.call(self, blobUrl);
                 self._url = originalUrl;
             }).catch(function(error) {
-                console.error('ZipLoader: image load failed', url, error);
-                self._loadingState = 'error';
+                // The file is genuinely absent from the asset pack. Fall back to
+                // a transparent placeholder so the bitmap still completes,
+                // instead of hanging in an 'error' state that can leave a
+                // cutscene (e.g. the neutral ending) stuck on a black screen.
+                console.warn('ZipLoader: image missing, using placeholder', url, error && error.message);
+                var originalUrl = self._url;
+                originalRequest.call(self, TRANSPARENT_PNG);
+                self._url = originalUrl;
             });
         };
         _bitmapHookPrototype = prototype;
@@ -839,7 +982,7 @@
                         'Upload it next to the archives (project root / baseUrl); language text will be unavailable.');
                     return false;
                 }),
-                loadArchiveCached(descWithManifest({ name: 'img_repk.zip', folder: 'img_pack', count: 55, pad: 2 }), 0, 100, 'images', 'images'),
+                loadArchiveCached(descWithManifest({ name: 'img_repk.zip', folder: 'img_pack', count: 57, pad: 2 }), 0, 100, 'images', 'images'),
                 loadArchiveCached(descWithManifest({ name: 'audio_repk.zip', folder: 'aud_pack', count: 111, pad: 3 }), 0, 100, 'audio', 'audio')
             ];
             await Promise.all(jobs);
@@ -848,6 +991,7 @@
             progress(100, languagesFailed
                 ? 'WARNING: languages.zip missing — language text unavailable. Press LAUNCH'
                 : 'All assets ready — press LAUNCH');
+            hideProgressBars();
             drainXhrQueue();
             showLaunchButton();
             console.log('ZipLoader: data, maps, languages, images, and audio ready (' + Object.keys(_vfs).length +
@@ -913,7 +1057,7 @@
                 var required = [
                     descWithManifest({ name: 'data.zip', folder: '', count: 1, pad: 0 }),
                     descWithManifest({ name: 'maps.zip', folder: '', count: 1, pad: 0 }),
-                    descWithManifest({ name: 'img_repk.zip', folder: 'img_pack', count: 55, pad: 2 }),
+                    descWithManifest({ name: 'img_repk.zip', folder: 'img_pack', count: 57, pad: 2 }),
                     descWithManifest({ name: 'audio_repk.zip', folder: 'aud_pack', count: 111, pad: 3 })
                 ];
                 return Promise.all(required.map(function(desc) {
