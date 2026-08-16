@@ -1361,9 +1361,90 @@
     }
 
     /* ------------------------------------------------------------------ *
+     *  Uploaded-mod persistence (survives restart, re-applies at LAUNCH)
+     * ------------------------------------------------------------------ */
+    var tauriInvoke = (typeof window.__TAURI__ !== 'undefined' && window.__TAURI__ &&
+        window.__TAURI__.core && typeof window.__TAURI__.core.invoke === 'function')
+        ? window.__TAURI__.core.invoke
+        : null;
+    var UPLOADED_KEY = 'omori.mods.uploaded';
+    var UPLOADED_FILE = 'mods/uploaded.json';
+
+    function bytesToBase64(bytes) {
+        var bin = '';
+        var chunk = 0x8000;
+        for (var i = 0; i < bytes.length; i += chunk) {
+            bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+        }
+        return btoa(bin);
+    }
+
+    function base64ToBytes(b64) {
+        var bin = atob(b64);
+        var bytes = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return bytes;
+    }
+
+    // Manual uploads (not the MOD/ preset) are mirrored to localStorage and, on
+    // desktop, to the native save folder, so they survive a restart and
+    // re-apply automatically at the next LAUNCH.
+    function syncUploadedMods() {
+        var list = stagedMods.filter(function (m) { return m.persist; })
+            .map(function (m) { return { name: m.name, size: m.size, base64: m.base64 }; });
+        var data = JSON.stringify(list);
+        try { window.localStorage.setItem(UPLOADED_KEY, data); } catch (e) {}
+        if (tauriInvoke) {
+            try {
+                tauriInvoke('write_file', { path: UPLOADED_FILE, content: data }).catch(function () {});
+            } catch (e) {}
+        }
+    }
+
+    function loadUploadedMods() {
+        var local = function () {
+            try { return window.localStorage.getItem(UPLOADED_KEY); } catch (e) { return null; }
+        };
+        if (tauriInvoke) {
+            return tauriInvoke('read_file', { path: UPLOADED_FILE }).then(function (content) {
+                return content || local();
+            }).catch(function () { return local(); });
+        }
+        return Promise.resolve(local());
+    }
+
+    function restoreUploadedMods() {
+        return loadUploadedMods().then(function (raw) {
+            if (!raw) return;
+            var list = null;
+            try { list = JSON.parse(raw); } catch (e) { return; }
+            if (!Array.isArray(list) || !list.length) return;
+            var pending = list.length;
+            list.forEach(function (item) {
+                if (!item || typeof item.base64 !== 'string' || !item.base64) {
+                    pending--;
+                    if (pending <= 0) renderModList();
+                    return;
+                }
+                try {
+                    var bytes = base64ToBytes(item.base64);
+                    ingestZipBytes(item.name || 'uploaded.zip', bytes, item.size || bytes.length, function () {
+                        pending--;
+                        if (pending <= 0) renderModList();
+                    }, true);
+                } catch (e) {
+                    warn('could not restore uploaded mod', item.name, e && e.message);
+                    pending--;
+                    if (pending <= 0) renderModList();
+                }
+            });
+        });
+    }
+
+    /* ------------------------------------------------------------------ *
      *  Staged mods & upload UI
      * ------------------------------------------------------------------ */
-    var stagedMods = []; // { name, size, files, modName, manifest }
+    var stagedMods = []; // { name, size, files, modName, manifest, persist, base64 }
 
     function el(id) { return document.getElementById(id); }
 
@@ -1435,13 +1516,14 @@
 
     function removeStagedMod(index) {
         stagedMods.splice(index, 1);
+        syncUploadedMods();
         renderModList();
     }
 
     /* Shared entry point: unzip a mod archive's bytes and append it to the
      * staged list. Used by both the manual upload flow and the bundled
      * MOD/ folder preset so the two stay in sync. */
-    function ingestZipBytes(name, bytes, size, onDone) {
+    function ingestZipBytes(name, bytes, size, onDone, persist) {
         var warnEl = el('modWarn');
         window.fflate.unzip(bytes, function (err, filesObj) {
             if (err) {
@@ -1466,7 +1548,11 @@
                     mod.plugins = pluginSet;
                     mod.fileCount = fCount;
                 }
-                stagedMods.push({ name: name, size: size, files: filesObj, modName: name, manifest: manifest });
+                stagedMods.push({
+                    name: name, size: size, files: filesObj, modName: name, manifest: manifest,
+                    persist: !!persist, base64: persist ? bytesToBase64(bytes) : null
+                });
+                if (persist) syncUploadedMods();
             }
             if (onDone) onDone();
         });
@@ -1490,7 +1576,7 @@
                 ingestZipBytes(file.name, new Uint8Array(reader.result), file.size, function () {
                     pending--;
                     if (!pending) renderModList();
-                });
+                }, true);
             };
             reader.readAsArrayBuffer(file);
         });
@@ -1504,7 +1590,7 @@
     var _presetSources = Object.create(null);
     function presetBundledMods() {
         if (_presetPromise) return _presetPromise;
-        _presetPromise = new Promise(function (resolve) {
+        _presetPromise = restoreUploadedMods().then(function () { return new Promise(function (resolve) {
             var modFolder = 'MOD';
             fetch(modFolder + '/modlist.json').then(function (r) {
                 if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -1537,6 +1623,7 @@
                 log('preset mods: no MOD/modlist.json (' + (err && err.message) + ')');
                 resolve();
             });
+        });
         });
         return _presetPromise;
     }
