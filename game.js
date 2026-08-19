@@ -79125,6 +79125,50 @@ Window_DebugEdit.prototype.updateVariable = function() {
         });
     }
 
+    // The save panel lives inside the launcher box until the game starts.
+    // On launch, reparent it to the document and glide it up to the top-right
+    // corner with a FLIP animation (measure -> relocate -> invert -> play).
+    function relocateSavePanelToCorner() {
+        var panel = document.getElementById('saveUploader');
+        if (!panel) return;
+        var first = panel.getBoundingClientRect();
+        var title = document.getElementById('saveUploaderTitle');
+        var divider = document.getElementById('saveUploaderDivider');
+        var buttons = document.getElementById('saveUploaderButtons');
+        document.body.appendChild(panel);
+        panel.style.position = 'fixed';
+        panel.style.top = '8px';
+        panel.style.right = '8px';
+        panel.style.left = 'auto';
+        panel.style.bottom = 'auto';
+        panel.style.margin = '0';
+        panel.style.width = 'auto';
+        panel.style.maxWidth = 'none';
+        panel.style.background = '#000';
+        panel.style.border = '2px solid #fff';
+        panel.style.padding = '10px 12px';
+        panel.style.boxSizing = 'border-box';
+        panel.style.alignItems = 'stretch';
+        panel.style.zIndex = '2147483647';
+        panel.style.transition = 'none';
+        panel.style.pointerEvents = 'none';
+        if (title) title.style.display = 'none';
+        if (divider) divider.style.display = 'none';
+        if (buttons) buttons.style.flexDirection = 'column';
+        var last = panel.getBoundingClientRect();
+        var dx = first.left - last.left;
+        var dy = first.top - last.top;
+        panel.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+        void panel.offsetWidth; // force reflow so the inverse transform sticks
+        panel.style.transition = 'transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)';
+        panel.style.transform = 'translate(0,0)';
+        setTimeout(function() {
+            panel.style.transition = '';
+            panel.style.transform = '';
+            panel.style.pointerEvents = 'auto';
+        }, 600);
+    }
+
     function showLaunchButton() {
         var button = document.getElementById('zipLaunchButton');
         if (!button || button.__zipLaunchBound) return;
@@ -79136,6 +79180,7 @@ Window_DebugEdit.prototype.updateVariable = function() {
             _launched = true;
             button.disabled = true;
             button.style.display = 'none';
+            relocateSavePanelToCorner();
             hideProgress();
             if (_resolveLaunch) {
                 var resolve = _resolveLaunch;
@@ -82593,7 +82638,8 @@ let wasm_bindgen;
         stagedMods.forEach(function (m, i) {
             var row = document.createElement('div');
             row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;' +
-                'padding:8px 12px;margin-bottom:6px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);border-radius:4px;';
+                'width:100%;margin:0 0 6px;box-sizing:border-box;' +
+                'padding:8px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);border-radius:4px;';
             var label = document.createElement('span');
             label.style.cssText = 'color:#eee;font-size:clamp(13px, 1.8vw, 17px);flex:1;text-align:left;line-height:1.4;';
             var name = m.modName || m.name;
@@ -82888,12 +82934,14 @@ let wasm_bindgen;
         var input = el('modFileInput');
         if (input) input.addEventListener('change', handleModUpload);
 
-        // Surface the uploader when the LAUNCH button becomes visible.
+        // Surface the uploader + saves panel when the LAUNCH button becomes visible.
         var timer = setInterval(function () {
             var launch = el('zipLaunchButton');
             var uploader = el('modUploader');
+            var saves = el('saveUploader');
             if (launch && uploader && launch.style.display !== 'none') {
                 uploader.style.display = 'block';
+                if (saves) saves.style.display = 'flex';
                 clearInterval(timer);
             }
         }, 250);
