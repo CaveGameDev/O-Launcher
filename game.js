@@ -79059,6 +79059,15 @@ Window_DebugEdit.prototype.updateVariable = function() {
     var _origSend = XMLHttpRequest.prototype.send;
     var _bitmapHookPrototype = null;
     var _graphicsHookTarget = null;
+    // Lazy media (img/ + audio/) store. Instead of decompressing the ~1.6 GB of
+    // image/audio archives into RAM at boot, we parse each archive's central
+    // directory once and keep only { path -> zip entry } metadata here. A file's
+    // bytes are materialised on demand from the cached archive Blob (which
+    // Chrome/Edge can spill to disk), so boot peak memory stays a small fraction
+    // of the old eager path.
+    var _mediaFiles = Object.create(null);       // normalized path -> { archive, lhOff, csize, usize, method }
+    var _mediaInsensitive = Object.create(null); // lowercased path -> normalized path
+    var _mediaBlobs = Object.create(null);       // archive name -> Blob
     // A fully transparent 48x48 PNG used as a stand-in when a referenced image
     // is absent from the asset pack. Loading this instead of failing keeps the
     // bitmap in a completed state, so a missing sprite renders as invisible
@@ -79428,6 +79437,20 @@ Window_DebugEdit.prototype.updateVariable = function() {
         });
     }
 
+    // Same store, but returns the Blob handle without materialising its bytes.
+    // The lazy media index slices straight out of this handle.
+    function cacheGetArchiveBlob(name) {
+        return idbGet('archives', 'archive:' + name);
+    }
+
+    function cachePutArchiveBlob(name, blob) {
+        try {
+            return idbPut('archives', 'archive:' + name, blob);
+        } catch (e) {
+            return Promise.resolve(false);
+        }
+    }
+
     // Lightweight presence check: unlike cacheGetArchive() this never
     // materializes the blob into memory, so a 500 MB archive can be verified
     // by its stored size alone. Returns the stored size (0 if missing/empty).
@@ -79650,6 +79673,105 @@ Window_DebugEdit.prototype.updateVariable = function() {
         return addZipFilesPieces([bytes], label);
     }
 
+    // ---- lazy media extraction -----------------------------------------------
+    // Reads a byte range from a (disk-backed) archive Blob without ever
+    // materialising the whole archive in memory.
+    function blobRange(blob, start, length) {
+        return blob.slice(start, start + length).arrayBuffer().then(function(ab) {
+            return new Uint8Array(ab);
+        });
+    }
+
+    function readU16(bytes, off) {
+        return bytes[off] | (bytes[off + 1] << 8);
+    }
+
+    function readU32(bytes, off) {
+        return (bytes[off] | (bytes[off + 1] << 8) | (bytes[off + 2] << 16) | (bytes[off + 3] << 24)) >>> 0;
+    }
+
+    function isMediaPath(path) {
+        return path.indexOf('img/') === 0 || path.indexOf('audio/') === 0;
+    }
+
+    // Parse the zip End Of Central Directory + central directory held in a Blob.
+    // Only the archive tail and the central directory bytes are read; entry
+    // payloads stay compressed inside the archive for on-demand extraction.
+    function buildMediaIndex(name, blob, label) {
+        var size = blob.size;
+        var tailStart = size > 65557 ? size - 65557 : 0;
+        return blobRange(blob, tailStart, size - tailStart).then(function(tail) {
+            var eocd = -1;
+            for (var i = tail.length - 4; i >= 0; i--) {
+                if (readU32(tail, i) === 0x06054b50) { eocd = i; break; }
+            }
+            if (eocd < 0) throw new Error('zip EOCD not found in ' + label);
+            var count = readU16(tail, eocd + 10);
+            var cdSize = readU32(tail, eocd + 12);
+            var cdOff = readU32(tail, eocd + 16);
+            return blobRange(blob, cdOff, cdSize).then(function(cd) {
+                var decoder = new TextDecoder('utf-8');
+                var off = 0;
+                var added = 0;
+                for (var n = 0; n < count; n++) {
+                    if (off + 46 > cd.length) break;
+                    if (readU32(cd, off) !== 0x02014b50) break;
+                    var method = readU16(cd, off + 10);
+                    var csize = readU32(cd, off + 20);
+                    var usize = readU32(cd, off + 24);
+                    var nameLen = readU16(cd, off + 28);
+                    var extraLen = readU16(cd, off + 30);
+                    var commentLen = readU16(cd, off + 32);
+                    var lhOff = readU32(cd, off + 42);
+                    var entryName = decoder.decode(cd.subarray(off + 46, off + 46 + nameLen));
+                    off += 46 + nameLen + extraLen + commentLen;
+                    var normalized = normalizePath(entryName);
+                    if (!normalized || /\/$/.test(normalized)) continue;
+                    _mediaFiles[normalized] = {
+                        archive: name,
+                        lhOff: lhOff,
+                        csize: csize,
+                        usize: usize,
+                        method: method
+                    };
+                    _mediaInsensitive[lookupPath(normalized).insensitive] = normalized;
+                    added++;
+                }
+                _mediaBlobs[name] = blob;
+                console.log('ZipLoader: indexed ' + added + ' files from ' + label + ' (lazy)');
+                return added;
+            });
+        });
+    }
+
+    function mediaEntryFor(path) {
+        var insensitive = lookupPath(path).insensitive;
+        var normalized = _mediaInsensitive[insensitive];
+        return normalized ? (_mediaFiles[normalized] || null) : null;
+    }
+
+    // Materialise a single media file: read its local header to find the data
+    // offset, slice only that entry's compressed bytes out of the archive, then
+    // inflate them. Nothing else from the archive is touched.
+    function readMediaBytes(entry) {
+        var blob = _mediaBlobs[entry.archive];
+        if (!blob) return Promise.reject(new Error('media archive not available: ' + entry.archive));
+        return blobRange(blob, entry.lhOff, 30).then(function(lh) {
+            if (readU32(lh, 0) !== 0x04034b50) throw new Error('bad zip local header in ' + entry.archive);
+            var nameLen = readU16(lh, 26);
+            var extraLen = readU16(lh, 28);
+            var dataStart = entry.lhOff + 30 + nameLen + extraLen;
+            return blobRange(blob, dataStart, entry.csize).then(function(compressed) {
+                if (entry.method === 0) return compressed;
+                if (entry.method === 8) {
+                    var out = new Uint8Array(entry.usize);
+                    return window.fflate.inflateSync(compressed, { out: out });
+                }
+                throw new Error('unsupported zip compression method ' + entry.method + ' in ' + entry.archive);
+            });
+        });
+    }
+
     function lookupPath(path) {
         var normalized = normalizePath(path);
         var decoded = normalized;
@@ -79683,10 +79805,20 @@ Window_DebugEdit.prototype.updateVariable = function() {
         if (_blobUrls[path]) return Promise.resolve(_blobUrls[path]);
         return ensureArchiveForPath(path).then(function() {
             var bytes = bytesFor(path);
-            if (!bytes) throw new Error('VFS file not found: ' + path);
-            var blob = new Blob([bytes], { type: mimeType(path) });
-            _blobUrls[path] = URL.createObjectURL(blob);
-            return _blobUrls[path];
+            if (bytes) {
+                _blobUrls[path] = URL.createObjectURL(new Blob([bytes], { type: mimeType(path) }));
+                return _blobUrls[path];
+            }
+            if (isMediaPath(path)) {
+                var entry = mediaEntryFor(path);
+                if (entry) {
+                    return readMediaBytes(entry).then(function(mediaBytes) {
+                        _blobUrls[path] = URL.createObjectURL(new Blob([mediaBytes], { type: mimeType(path) }));
+                        return _blobUrls[path];
+                    });
+                }
+            }
+            throw new Error('VFS file not found: ' + path);
         });
     }
 
@@ -79736,19 +79868,35 @@ Window_DebugEdit.prototype.updateVariable = function() {
             delete _vfs[existing];
             delete _vfsInsensitive[lookup.insensitive];
             invalidateBlobUrl(existing);
-            return true;
         }
         delete _vfs[normalized];
+        // A mod can also mask a base archive file that lives only in the lazy
+        // media index (img/ + audio/); dropping it there makes removeFile() a
+        // real removal rather than a no-op that still resolves the base bytes.
+        var mediaNormalized = _mediaInsensitive[lookup.insensitive];
+        if (mediaNormalized) {
+            delete _mediaFiles[mediaNormalized];
+            delete _mediaInsensitive[lookup.insensitive];
+        }
         invalidateBlobUrl(normalized);
         return true;
     }
 
     function hasFile(path) {
-        return bytesFor(path) != null;
+        if (bytesFor(path) != null) return true;
+        if (isMediaPath(normalizePath(path))) return !!mediaEntryFor(path);
+        return false;
     }
 
     function listFiles(prefix) {
-        var out = Object.keys(_vfs);
+        var seen = Object.create(null);
+        var out = [];
+        var keys = Object.keys(_vfs).concat(Object.keys(_mediaFiles));
+        for (var i = 0; i < keys.length; i++) {
+            if (seen[keys[i]]) continue;
+            seen[keys[i]] = true;
+            out.push(keys[i]);
+        }
         if (prefix) {
             var p = normalizePath(prefix).toLowerCase();
             out = out.filter(function(name) { return name.toLowerCase().indexOf(p) === 0; });
@@ -79832,11 +79980,93 @@ Window_DebugEdit.prototype.updateVariable = function() {
         });
     }
 
+    // Media archives (img_repk/audio_repk) are never decompressed into _vfs.
+    // Download the parts, assemble them into a single disk-backed Blob (the
+    // split parts form one zip), persist that Blob, then build the lazy
+    // per-file index. Peak RAM is bounded by the compressed parts rather than
+    // the full uncompressed image/audio payload.
+    function downloadMediaArchive(desc, expected, label, channel) {
+        var base = archiveBaseUrl(desc);
+        var folder = desc.folder ? base + '/' + desc.folder : base;
+        var items = [];
+        for (var i = 0; i < desc.count; i++) {
+            var suffix = desc.pad ? String(i + 1).padStart(desc.pad, '0') : '';
+            var fileName = desc.name + (desc.pad ? '.part' + suffix : '');
+            items.push({
+                url: folder ? folder + '/' + fileName : fileName,
+                start: 100 * (i / desc.count),
+                span: 100 / desc.count,
+                label: label + ' part ' + (i + 1) + '/' + desc.count,
+                channel: channel
+            });
+        }
+        var t0 = performance.now();
+        return fetchQueue(items).then(function(pieces) {
+            var total = 0;
+            for (var j = 0; j < pieces.length; j++) total += pieces[j].length;
+            if (expected && expected.parts && expected.parts.length === pieces.length) {
+                for (var k = 0; k < pieces.length; k++) {
+                    if (expected.parts[k].size && pieces[k].length !== expected.parts[k].size) {
+                        console.warn('ZipLoader: ' + label + ' part ' + (k + 1) + ' size differs from manifest (' +
+                            pieces[k].length + ' != ' + expected.parts[k].size + '); using the fetched bytes.');
+                    }
+                }
+            }
+            console.log('ZipLoader: [' + label + '] downloaded ' + (total / 1048576).toFixed(1) +
+                ' MB in ' + (performance.now() - t0).toFixed(0) + ' ms');
+            // new Blob(pieces) lets the browser own the bytes (and spill the
+            // large archive to disk) instead of forcing one contiguous copy.
+            var blob = new Blob(pieces);
+            pieces = null;
+            var persist = Promise.resolve(false);
+            if (_cacheEnabled && expected) {
+                persist = cachePutArchiveBlob(desc.name, blob).then(function() {
+                    return cachePutMeta(desc.name, expected);
+                });
+            }
+            return persist.then(function() {
+                return buildMediaIndex(desc.name, blob, label);
+            }).then(function(count) {
+                progressChannel(channel, 100, label + ' ready');
+                return count;
+            });
+        });
+    }
+
+    function loadMediaArchive(desc, label, channel) {
+        return ensureMeta(desc).then(function(expected) {
+            if (_cacheEnabled && expected) {
+                var t0 = performance.now();
+                return cacheGetMeta(desc.name).then(function(cached) {
+                    if (cached && cached.version === expected.version &&
+                        cached.totalSize === expected.totalSize) {
+                        return cacheGetArchiveBlob(desc.name).then(function(blob) {
+                            if (blob) {
+                                console.log('ZipLoader: [' + label + '] cache hit (' +
+                                    (blob.size / 1048576).toFixed(1) + ' MB, v' + expected.version +
+                                    ', indexed in ' + (performance.now() - t0).toFixed(0) + ' ms)');
+                                progressChannel(channel, 90, label + ' from cache...');
+                                return buildMediaIndex(desc.name, blob, label).then(function(count) {
+                                    progressChannel(channel, 100, label + ' ready (cache)');
+                                    return count;
+                                });
+                            }
+                            return downloadMediaArchive(desc, expected, label, channel);
+                        });
+                    }
+                    return downloadMediaArchive(desc, expected, label, channel);
+                });
+            }
+            return downloadMediaArchive(desc, expected, label, channel);
+        });
+    }
+
     // Native desktop: img/ and audio/ files are served lazily file-by-file
     // from the Rust backend (omori:// random access into the part archives), so
     // boot no longer downloads and unzips ~1.5 GB. data/maps/languages stay
     // eager (they're small and read synchronously). If a lazy fetch fails
-    // (missing parts / older layout), fall back to the full eager path.
+    // (missing parts / older layout), fall back to downloading + indexing the
+    // media archives like the web build.
     function ensureNativeFile(path) {
         var normalized = normalizePath(path);
         if (bytesFor(normalized)) return Promise.resolve(true);
@@ -79933,11 +80163,24 @@ Window_DebugEdit.prototype.updateVariable = function() {
             var path = normalizePath(url);
             return ensureArchiveForPath(path).then(function() {
                 var bytes = bytesFor(path);
-                if (!bytes) return new Response('', { status: 404 });
-                return new Response(bytes, {
-                    status: 200,
-                    headers: { 'Content-Type': mimeType(path), 'Cache-Control': 'no-store' }
-                });
+                if (bytes) {
+                    return new Response(bytes, {
+                        status: 200,
+                        headers: { 'Content-Type': mimeType(path), 'Cache-Control': 'no-store' }
+                    });
+                }
+                if (isMediaPath(path)) {
+                    var entry = mediaEntryFor(path);
+                    if (entry) {
+                        return readMediaBytes(entry).then(function(mediaBytes) {
+                            return new Response(mediaBytes, {
+                                status: 200,
+                                headers: { 'Content-Type': mimeType(path), 'Cache-Control': 'no-store' }
+                            });
+                        }, function() { return new Response('', { status: 404 }); });
+                    }
+                }
+                return new Response('', { status: 404 });
             });
         };
     }
@@ -80009,19 +80252,23 @@ Window_DebugEdit.prototype.updateVariable = function() {
 
     // ---- boot -----------------------------------------------------------------
     var _mediaPromise = null;
-    function mediaJobs() {
-        return [
-            loadArchiveCached(descWithManifest({ name: 'img_repk.zip', folder: 'img_pack', count: 57, pad: 2 }), 0, 100, 'images', 'images'),
-            loadArchiveCached(descWithManifest({ name: 'audio_repk.zip', folder: 'aud_pack', count: 111, pad: 3 }), 0, 100, 'audio', 'audio')
-        ];
-    }
-
-    // Full eager media load — the web path, and the native fallback when a lazy
-    // single-file fetch fails (e.g. the part layout isn't indexable).
+    // Lazy media load: build the per-file index for img/ and audio/ without
+    // decompressing them into RAM. Sequential (images then audio) so only one
+    // archive's compressed parts are ever held at once. The native Tauri build
+    // normally never reaches this — it serves files one at a time from the Rust
+    // backend — but it remains the correct fallback when that path fails.
     function loadMedia() {
         if (_mediaPromise) return _mediaPromise;
-        _mediaPromise = Promise.all(mediaJobs()).then(function() {
-            console.log('ZipLoader: images + audio loaded eagerly');
+        _mediaPromise = loadMediaArchive(
+            descWithManifest({ name: 'img_repk.zip', folder: 'img_pack', count: 57, pad: 2 }),
+            'images', 'images'
+        ).then(function() {
+            return loadMediaArchive(
+                descWithManifest({ name: 'audio_repk.zip', folder: 'aud_pack', count: 111, pad: 3 }),
+                'audio', 'audio'
+            );
+        }).then(function() {
+            console.log('ZipLoader: images + audio indexed (lazy)');
             return true;
         });
         return _mediaPromise;
@@ -80056,25 +80303,27 @@ Window_DebugEdit.prototype.updateVariable = function() {
                     return false;
                 })
             ];
+            await Promise.all(jobs);
+
             // Native desktop: images + audio are served lazily file-by-file from
             // the Rust backend, so boot only downloads the small core archives.
-            // The web build keeps the eager path.
+            // The web build downloads + indexes the media archives (no full
+            // decompression into RAM).
             if (!_isTauri) {
-                jobs = jobs.concat(mediaJobs());
+                await loadMedia();
             }
-            await Promise.all(jobs);
 
             _ready = true;
             progress(100, languagesFailed
                 ? 'WARNING: languages.zip missing — language text unavailable. Press LAUNCH'
-                : (_isTauri ? 'Ready — press LAUNCH (images/audio load on demand)' : 'All assets ready — press LAUNCH'));
+                : 'Ready — press LAUNCH');
             hideProgressBars();
             drainXhrQueue();
             showLaunchButton();
             console.log('ZipLoader: core archives ready (' + Object.keys(_vfs).length +
                 ' files) for account "' + _accountId + '" in ' +
                 ((performance.now() - t0) / 1000).toFixed(1) + ' s' +
-                (_isTauri ? ' — images/audio load on demand' : '') + '; press Launch');
+                ' — images/audio load on demand; press Launch');
             return true;
         })().catch(function(error) {
             _error = error;
@@ -80097,8 +80346,19 @@ Window_DebugEdit.prototype.updateVariable = function() {
         getBlobUrl: function(path) { return blobUrlFor(path); },
         ensureFile: function(path) {
             var normalized = normalizePath(path);
-            if (_isTauri && (normalized.indexOf('img/') === 0 || normalized.indexOf('audio/') === 0)) {
-                return ensureArchiveForPath(normalized);
+            if (isMediaPath(normalized)) {
+                return ensureArchiveForPath(normalized).then(function() {
+                    if (bytesFor(normalized)) return true;
+                    var entry = mediaEntryFor(normalized);
+                    if (!entry) throw new Error('media file not found: ' + normalized);
+                    // Materialise into _vfs so synchronous getFile() consumers
+                    // (mod image deltas) can read the bytes immediately.
+                    return readMediaBytes(entry).then(function(bytes) {
+                        _vfs[normalized] = bytes;
+                        _vfsInsensitive[lookupPath(normalized).insensitive] = normalized;
+                        return true;
+                    });
+                });
             }
             return init();
         },
