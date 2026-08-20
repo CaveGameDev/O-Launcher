@@ -191,6 +191,7 @@
 
             <div class="actions">
                 <button class="button" id="installButton" type="button" disabled>Install assets</button>
+                <button class="button secondary" id="openGameButton" type="button" disabled>Open game</button>
                 <button class="button secondary" id="cancelButton" type="button" disabled>Cancel</button>
                 <button class="button secondary" id="refreshButton" type="button">Refresh status</button>
             </div>
@@ -679,6 +680,7 @@ Metadata keys: meta:data.zip, meta:maps.zip, meta:languages.zip, meta:img_repk.z
                 $('overallLabel').textContent = 'Cache is complete';
                 setStatus('Everything required is already cached. You can open index.html.', 'ok');
                 $('installButton').textContent = 'Complete';
+                $('openGameButton').disabled = false;
             } else {
                 $('overallLabel').textContent = 'Ready to prepare ' + fmtBytes(totalBytes - completedBytes);
                 setStatus('Manifest validated. Existing matching archives will be skipped.');
@@ -731,6 +733,7 @@ Metadata keys: meta:data.zip, meta:maps.zip, meta:languages.zip, meta:img_repk.z
             $('overallLabel').textContent = 'Cache is complete';
             setStatus('All ZIP archives are cached. Open index.html to play.', 'ok');
             $('installButton').textContent = 'Complete';
+            $('openGameButton').disabled = false;
             log('Installation complete. No game code was run by this page.');
         }).catch(function (error) {
             if (error && error.message === 'Installation cancelled. Existing completed archives were kept.') {
@@ -753,6 +756,9 @@ Metadata keys: meta:data.zip, meta:maps.zip, meta:languages.zip, meta:img_repk.z
     }
 
     $('installButton').addEventListener('click', install);
+    $('openGameButton').addEventListener('click', function () {
+        window.location.href = 'game.html';
+    });
     $('cancelButton').addEventListener('click', cancel);
     $('refreshButton').addEventListener('click', function () {
         if (!running) {
