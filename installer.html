@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#08080d">
+<title>OMORI Asset Installer</title>
+<style>
+    :root {
+        color-scheme: dark;
+        --bg: #0b0b10;
+        --surface: #121219;
+        --surface-raised: #181821;
+        --surface-soft: #0f0f16;
+        --border: rgba(255, 255, 255, .1);
+        --border-strong: rgba(255, 255, 255, .18);
+        --text: #f7f5fb;
+        --muted: #9d9aa9;
+        --faint: #666371;
+        --lavender: #b6a6ff;
+        --lavender-soft: #7769bb;
+        --mint: #8be2b2;
+        --amber: #f2c979;
+        --red: #f18d9b;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--bg); }
+    body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        color: var(--text);
+        background:
+            radial-gradient(ellipse 600px 420px at 6% -8%, rgba(123, 101, 208, .18), transparent 68%),
+            radial-gradient(ellipse 520px 380px at 96% 105%, rgba(65, 117, 130, .1), transparent 70%),
+            var(--bg);
+        font: 14px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: .01em;
+    }
+    body::before {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        content: "";
+        opacity: .3;
+        background-image: linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+        background-size: 42px 42px;
+        mask-image: linear-gradient(to bottom, #000, transparent 80%);
+    }
+    @font-face { font-family: OmoriInstaller; src: url("fonts/OMORI_GAME2.ttf"); }
+    button { font: inherit; }
+    code { color: var(--lavender); font: inherit; }
+    .shell { width: min(1080px, 100%); margin: 0 auto; padding: 22px 28px 48px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 42px; color: var(--muted); font-size: 12px; }
+    .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-weight: 700; letter-spacing: .16em; }
+    .brand-mark { display: grid; width: 26px; height: 26px; place-items: center; border: 1px solid var(--border-strong); border-radius: 7px; color: var(--lavender); font-size: 9px; letter-spacing: 0; }
+    .topbar-meta { display: inline-flex; align-items: center; gap: 8px; }
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 12px rgba(139,226,178,.75); }
+    .hero { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(260px, .8fr); gap: 42px; align-items: end; padding: 76px 0 56px; }
+    .kicker, .section-label { margin: 0 0 14px; color: var(--lavender); font-size: 10px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
+    h1 { max-width: 680px; margin: 0; font-size: clamp(40px, 7vw, 74px); font-weight: 650; letter-spacing: -.055em; line-height: .98; }
+    h1 em { color: var(--lavender); font-style: normal; }
+    .hero-copy > p:last-child { max-width: 565px; margin: 22px 0 0; color: var(--muted); font-size: 15px; }
+    .hero-art { position: relative; min-height: 188px; overflow: hidden; border: 1px solid var(--border); border-radius: 18px; background: linear-gradient(145deg, rgba(182,166,255,.14), rgba(255,255,255,.025) 50%, rgba(139,226,178,.06)); }
+    .hero-art::before, .hero-art::after { position: absolute; border: 1px solid rgba(182,166,255,.25); border-radius: 50%; content: ""; }
+    .hero-art::before { width: 245px; height: 245px; top: -96px; right: -54px; }
+    .hero-art::after { width: 170px; height: 170px; bottom: -96px; left: -55px; border-color: rgba(139,226,178,.2); }
+    .art-window { position: absolute; inset: 25px; display: flex; flex-direction: column; justify-content: space-between; padding: 16px; border: 1px solid rgba(255,255,255,.13); border-radius: 11px; background: rgba(11,11,16,.48); backdrop-filter: blur(8px); }
+    .art-window-top { display: flex; justify-content: space-between; color: var(--faint); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+    .art-symbol { align-self: center; color: var(--lavender); font-family: OmoriInstaller, Georgia, serif; font-size: 64px; line-height: 1; text-shadow: 0 0 30px rgba(182,166,255,.35); }
+    .art-caption { color: var(--muted); font-size: 11px; text-align: right; }
+    .install-card { padding: 28px; border: 1px solid var(--border-strong); border-radius: 14px; background: rgba(18,18,25,.88); box-shadow: 0 24px 80px rgba(0,0,0,.28); }
+    .card-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 25px; }
+    .card-heading h2 { margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -.025em; }
+    .overall-percent { color: var(--lavender); font-size: 30px; font-weight: 600; letter-spacing: -.05em; }
+    .overall-progress { margin-bottom: 25px; }
+    .progress-row { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
+    .progress-row strong { color: var(--text); font-weight: 500; }
+    .main-bar { height: 8px; margin-top: 10px; overflow: hidden; background: #25232e; border-radius: 99px; }
+    #overallFill { width: 0; height: 100%; background: linear-gradient(90deg, var(--lavender-soft), var(--lavender)); border-radius: inherit; transition: width .2s ease; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 26px; }
+    .stat { min-width: 0; padding: 14px 15px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-soft); }
+    .stat-label { display: block; color: var(--faint); font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+    .stat-value { display: block; overflow: hidden; margin-top: 4px; color: var(--text); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+    .archive-list { display: grid; gap: 8px; }
+    .archive { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: 14px 15px; border: 1px solid var(--border); border-radius: 9px; background: rgba(255,255,255,.018); transition: border-color .2s, background .2s; }
+    .archive:hover { border-color: var(--border-strong); background: rgba(255,255,255,.032); }
+    .archive-title { overflow-wrap: anywhere; color: var(--text); font-size: 13px; font-weight: 550; }
+    .archive-meta { margin-top: 3px; color: var(--faint); font-size: 11px; }
+    .archive-state { align-self: center; color: var(--faint); font-size: 10px; font-weight: 700; letter-spacing: .1em; text-align: right; white-space: nowrap; }
+    .archive-state.ready { color: var(--mint); }
+    .archive-state.active { color: var(--amber); }
+    .archive-state.error { color: var(--red); }
+    .archive-bar { grid-column: 1 / -1; height: 4px; overflow: hidden; background: #292732; border-radius: 99px; }
+    .archive-fill { width: 0; height: 100%; background: linear-gradient(90deg, var(--lavender-soft), var(--lavender)); border-radius: inherit; transition: width .18s ease; }
+    .archive-fill.ready { background: var(--mint); }
+    #status { display: flex; align-items: flex-start; gap: 9px; min-height: 24px; margin-top: 18px; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+    #status::before { flex: 0 0 auto; width: 6px; height: 6px; margin-top: 6px; border-radius: 50%; background: var(--lavender-soft); content: ""; }
+    #status.ok { color: var(--mint); }
+    #status.ok::before { background: var(--mint); }
+    #status.error { color: var(--red); }
+    #status.error::before { background: var(--red); }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .button { min-height: 42px; padding: 10px 18px; border: 1px solid var(--lavender); border-radius: 8px; background: var(--lavender); color: #17131f; cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .06em; transition: filter .2s, transform .1s, background .2s; }
+    .button:hover { filter: brightness(1.1); }
+    .button:active { transform: translateY(1px); }
+    .button.secondary { border-color: var(--border-strong); background: transparent; color: var(--text); }
+    .button.secondary:hover { background: rgba(255,255,255,.08); }
+    .button:disabled { cursor: wait; opacity: .42; filter: grayscale(.5); }
+    .lower-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+    .info-card { padding: 17px; border: 1px solid var(--border); border-radius: 11px; background: rgba(18,18,25,.65); }
+    .info-card h3 { margin: 0 0 6px; font-size: 12px; font-weight: 650; }
+    .info-card p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+    .details { margin-top: 18px; color: var(--muted); font-size: 11px; }
+    .details summary { cursor: pointer; color: var(--faint); }
+    .details pre { max-height: 170px; overflow: auto; margin: 10px 0 0; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: #09090e; white-space: pre-wrap; word-break: break-word; }
+    .footer { margin-top: 26px; color: var(--faint); font-size: 11px; text-align: center; }
+    @media (max-width: 720px) { .hero { grid-template-columns: 1fr; padding: 54px 0 34px; } .hero-art { min-height: 150px; } .lower-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 560px) { .shell { padding: 18px 16px 36px; } .topbar-meta { display: none; } .install-card { padding: 19px; } .stats { grid-template-columns: 1fr; } .archive { grid-template-columns: 1fr; } .archive-state { text-align: left; } .card-heading { align-items: center; } }
+
+    /* Plain, task-focused utility layout. */
+    body { background: var(--bg); }
+    body::before { display: none; }
+    .shell { width: min(680px, 100%); padding: 24px 20px 36px; }
+    .topbar { min-height: 28px; }
+    .topbar-meta { display: none; }
+    .brand-mark { display: none; }
+    .brand { letter-spacing: .08em; }
+    .hero { display: block; padding: 44px 0 26px; }
+    .hero-art, .kicker { display: none; }
+    h1 { max-width: none; font-size: 32px; font-weight: 600; letter-spacing: -.03em; }
+    h1 em { color: var(--text); }
+    .hero-copy > p:last-child { max-width: 600px; margin-top: 12px; color: var(--muted); font-size: 14px; }
+    .install-card { padding: 20px; border-radius: 8px; background: var(--surface); box-shadow: none; }
+    .card-heading { margin-bottom: 18px; }
+    .card-heading h2 { font-size: 18px; }
+    .overall-percent { font-size: 22px; }
+    .stats { gap: 8px; margin-bottom: 20px; }
+    .stat { padding: 11px 12px; }
+    .archive { padding: 12px; border-radius: 6px; }
+    .archive:hover { background: rgba(255,255,255,.018); }
+    .lower-grid { display: none; }
+    .footer { margin-top: 16px; }
+    @media (max-width: 560px) { .shell { padding: 20px 14px 30px; } .hero { padding-top: 34px; } .install-card { padding: 16px; } }
+</style>
+</head>
+<body>
+<div class="shell">
+    <header class="topbar">
+        <a class="brand" href="./index.html" aria-label="Return to OMORI"><span class="brand-mark">OM</span><span>OMORI</span></a>
+        <div class="topbar-meta"><span class="live-dot"></span><span>Browser asset installer</span></div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-copy">
+                <p class="kicker">Local cache setup</p>
+                <h1>Prepare game files</h1>
+                <p>This downloads the files needed by the browser version of OMORI and saves them locally. Once complete, the game can start without downloading them again.</p>
+            </div>
+            <div class="hero-art" aria-hidden="true">
+                <div class="art-window">
+                    <div class="art-window-top"><span>asset memory</span><span>01 / 01</span></div>
+                    <div class="art-symbol">✦</div>
+                    <div class="art-caption">stable playback / offline-ready</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="install-card" aria-live="polite">
+            <div class="card-heading">
+                <div><p class="section-label">Installation</p><h2>Game assets</h2></div>
+                <div class="overall-percent" id="overallPercent">0%</div>
+            </div>
+
+            <div class="overall-progress">
+                <div class="progress-row"><strong id="overallLabel">Checking existing cache</strong><span><span id="noticeSize">1.6 GB</span> total</span></div>
+                <div class="main-bar"><div id="overallFill"></div></div>
+                <div id="status">The manifest will be checked before any download begins.</div>
+            </div>
+
+            <div class="stats">
+                <div class="stat"><span class="stat-label">Packages</span><span class="stat-value" id="archiveCount">Checking...</span></div>
+                <div class="stat"><span class="stat-label">Required storage</span><span class="stat-value" id="totalSize">Checking...</span></div>
+                <div class="stat"><span class="stat-label">Browser storage</span><span class="stat-value" id="storageStatus">Checking...</span></div>
+            </div>
+
+            <div class="archive-list" id="archiveList"><div class="archive-meta">Reading manifest.json...</div></div>
+
+            <div class="actions">
+                <button class="button" id="installButton" type="button" disabled>Install assets</button>
+                <button class="button secondary" id="cancelButton" type="button" disabled>Cancel</button>
+                <button class="button secondary" id="refreshButton" type="button">Refresh status</button>
+            </div>
+
+            <details class="details">
+                <summary>Show technical details</summary>
+                <pre id="log">Transport: OMORI_INSTALLER_ZIP_LOADER (fetch/streaming when available, XHR/ArrayBuffer fallback otherwise)
+Cache target: IndexedDB database WO_Assets, object stores archives + meta.
+Archive keys: archive:data.zip, archive:maps.zip, archive:languages.zip, archive:img_repk.zip, archive:audio_repk.zip
+Metadata keys: meta:data.zip, meta:maps.zip, meta:languages.zip, meta:img_repk.zip, meta:audio_repk.zip</pre>
+            </details>
+        </section>
+
+        <section class="lower-grid" aria-label="Installation information">
+            <article class="info-card"><h3>What gets stored</h3><p>Five verified ZIP packages are saved to IndexedDB. No extracted duplicate is created, keeping storage and startup memory lower.</p></article>
+            <article class="info-card"><h3>Safe to leave and return</h3><p>Completed packages are detected by manifest version and size. If a download stops, start again to resume from the last completed package.</p></article>
+            <article class="info-card"><h3>After installation</h3><p>When every package is ready, close this tab and open <code>index.html</code>. The game will load from the local cache.</p></article>
+        </section>
+    </main>
+    <footer class="footer">When installation is complete, close this page and open <code>index.html</code>.</footer>
+</div>
+<script>
+(function () {
+    'use strict';
+
+    var DB_NAME = 'WO_Assets';
+    var DB_VERSION = 1;
+    var REQUIRED = ['data.zip', 'maps.zip', 'languages.zip', 'img_repk.zip', 'audio_repk.zip'];
+    var ROOM_NAMES = {
+        'data.zip': 'HEADSPACE / DATABASE',
+        'maps.zip': 'HEADSPACE / MAPS',
+        'languages.zip': 'HEADSPACE / LANGUAGE',
+        'img_repk.zip': 'HEADSPACE / IMAGES',
+        'audio_repk.zip': 'HEADSPACE / AUDIO'
+    };
+    var DEFAULT_CONCURRENCY = 6;
+    var MAX_RETRIES = 3;
+    var config = { baseUrl: '', useRemoteParts: false, concurrency: String(DEFAULT_CONCURRENCY) };
+    var manifest = null;
+    var archives = [];
+    var dbPromise = null;
+    var controller = null;
+    var running = false;
+    var totalBytes = 0;
+    var completedBytes = 0;
+    var archiveLoaded = Object.create(null);
+    var rows = Object.create(null);
+
+    // This is deliberately separate from the game's ZipLoader. The installer
+    // never loads fflate, game.js, or any RPG Maker code: its only job is to
+    // fetch split ZIP parts, join them, and write the two records ZipLoader
+    // expects into IndexedDB. The transport has an XHR path for constrained
+    // WebViews that have fetch, streams, or AbortController disabled.
+    var OmoriInstallerZipLoader = {
+        name: 'OMORI_INSTALLER_ZIP_LOADER',
+        makeCancellation: function () {
+            if (typeof AbortController !== 'undefined') return new AbortController();
+            var listeners = [];
+            var signal = {
+                aborted: false,
+                addEventListener: function (event, listener) {
+                    if (event === 'abort') listeners.push(listener);
+                }
+            };
+            return {
+                signal: signal,
+                abort: function () {
+                    if (signal.aborted) return;
+                    signal.aborted = true;
+                    listeners.slice().forEach(function (listener) { try { listener(); } catch (e) {} });
+                }
+            };
+        },
+        request: function (url, options) {
+            options = options || {};
+            var signal = options.signal;
+            if (typeof fetch === 'function') {
+                var init = { cache: 'no-cache' };
+                // Do not pass a signal to older fetch implementations that
+                // reject unknown/unsupported AbortSignal objects.
+                if (signal && typeof AbortController !== 'undefined') init.signal = signal;
+                return fetch(url, init).then(function (response) {
+                    if (!response.ok) throw new Error('HTTP ' + response.status + ' for ' + url);
+                    return response;
+                });
+            }
+            if (typeof XMLHttpRequest === 'undefined') {
+                return Promise.reject(new Error('This browser has neither fetch nor XMLHttpRequest.'));
+            }
+            return new Promise(function (resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                var finished = false;
+                function done(error) {
+                    if (finished) return;
+                    finished = true;
+                    if (error) reject(error); else resolve({
+                        ok: xhr.status >= 200 && xhr.status < 300,
+                        status: xhr.status,
+                        headers: { get: function (name) { return name.toLowerCase() === 'content-length' ? xhr.getResponseHeader('Content-Length') : null; } },
+                        body: null,
+                        text: function () { return Promise.resolve(xhr.responseText); },
+                        arrayBuffer: function () { return Promise.resolve(xhr.response); }
+                    });
+                }
+                xhr.open('GET', url, true);
+                xhr.responseType = options.responseType === 'text' ? 'text' : 'arraybuffer';
+                xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 300) done();
+                    else done(new Error('HTTP ' + xhr.status + ' for ' + url));
+                };
+                xhr.onerror = function () { done(new Error('Network error while reading ' + url)); };
+                xhr.onabort = function () { done(new Error('Request cancelled for ' + url)); };
+                if (signal && typeof signal.addEventListener === 'function') {
+                    signal.addEventListener('abort', function () {
+                        try { xhr.abort(); } catch (e) {}
+                    });
+                }
+                try { xhr.send(); } catch (error) { done(error); }
+            });
+        },
+        text: function (url) {
+            return this.request(url, { responseType: 'text' }).then(function (response) {
+                return typeof response.text === 'function' ? response.text() : response.responseText;
+            });
+        },
+        json: function (url) {
+            return this.text(url).then(function (text) { return JSON.parse(text); });
+        },
+        bytes: function (url, signal) {
+            return this.request(url, { responseType: 'arraybuffer', signal: signal }).then(function (response) {
+                if (typeof response.arrayBuffer === 'function') return response.arrayBuffer().then(function (buffer) { return new Uint8Array(buffer); });
+                return new Uint8Array(response.response);
+            });
+        }
+    };
+    window.OmoriInstallerZipLoader = OmoriInstallerZipLoader;
+
+    var $ = function (id) { return document.getElementById(id); };
+    var fmtBytes = function (bytes) {
+        bytes = Number(bytes) || 0;
+        if (bytes < 1024) return bytes + ' B';
+        var units = ['KB', 'MB', 'GB', 'TB'];
+        var value = bytes;
+        var unit = -1;
+        while (value >= 1024 && unit < units.length - 1) { value /= 1024; unit++; }
+        return value.toFixed(value >= 100 ? 0 : value >= 10 ? 1 : 2) + ' ' + units[unit];
+    };
+    var setStatus = function (text, kind) {
+        $('status').textContent = text;
+        $('status').className = kind || '';
+    };
+    var log = function (text) {
+        var box = $('log');
+        box.textContent += '\n' + new Date().toLocaleTimeString() + '  ' + text;
+        box.scrollTop = box.scrollHeight;
+    };
+    var fail = function (error) {
+        var text = error && error.message ? error.message : String(error);
+        setStatus(text, 'error');
+        log('ERROR: ' + text);
+    };
+    var sleep = function (ms) { return new Promise(function (resolve) { setTimeout(resolve, ms); }); };
+
+    function parseIni(text) {
+        var result = { baseUrl: '', useRemoteParts: false, concurrency: String(DEFAULT_CONCURRENCY) };
+        String(text || '').split(/\r?\n/).forEach(function (line) {
+            line = line.trim();
+            if (!line || line.charAt(0) === ';' || line.charAt(0) === '#') return;
+            var split = line.indexOf('=');
+            if (split < 0) return;
+            var key = line.slice(0, split).trim();
+            var value = line.slice(split + 1).trim();
+            if (key === 'baseUrl') result.baseUrl = value;
+            if (key === 'useRemoteParts') result.useRemoteParts = value.toLowerCase() === 'true';
+            if (key === 'concurrency') result.concurrency = value;
+        });
+        return result;
+    }
+
+    function fetchText(url) {
+        return OmoriInstallerZipLoader.text(url);
+    }
+
+    function fetchJson(url) {
+        return OmoriInstallerZipLoader.json(url);
+    }
+
+    function openDb() {
+        if (dbPromise) return dbPromise;
+        if (!window.indexedDB) return Promise.reject(new Error('IndexedDB is unavailable in this browser.'));
+        dbPromise = new Promise(function (resolve, reject) {
+            var request = indexedDB.open(DB_NAME, DB_VERSION);
+            request.onupgradeneeded = function (event) {
+                var database = event.target.result;
+                if (!database.objectStoreNames.contains('archives')) database.createObjectStore('archives', { keyPath: 'key' });
+                if (!database.objectStoreNames.contains('meta')) database.createObjectStore('meta', { keyPath: 'key' });
+            };
+            request.onsuccess = function (event) { resolve(event.target.result); };
+            request.onerror = function () { reject(request.error || new Error('Could not open the asset cache.')); };
+        });
+        return dbPromise;
+    }
+
+    function readCache(store, key) {
+        return openDb().then(function (database) {
+            return new Promise(function (resolve) {
+                var transaction;
+                try {
+                    transaction = database.transaction(store, 'readonly');
+                    var request = transaction.objectStore(store).get(key);
+                    request.onsuccess = function () { resolve(request.result ? request.result.value : null); };
+                    request.onerror = function () { resolve(null); };
+                } catch (error) { resolve(null); }
+            });
+        });
+    }
+
+    function writeCache(store, key, value) {
+        return openDb().then(function (database) {
+            return new Promise(function (resolve, reject) {
+                var transaction;
+                try {
+                    transaction = database.transaction(store, 'readwrite');
+                    transaction.objectStore(store).put({ key: key, value: value });
+                    transaction.oncomplete = function () { resolve(); };
+                    transaction.onerror = function () { reject(transaction.error || new Error('Could not write ' + key + ' to IndexedDB.')); };
+                    transaction.onabort = function () { reject(transaction.error || new Error('IndexedDB write was aborted.')); };
+                } catch (error) { reject(error); }
+            });
+        });
+    }
+
+    function expectedMeta(archive) {
+        return {
+            version: String(manifest.version || '1'),
+            totalSize: Number(archive.totalSize) || archive.parts.reduce(function (sum, part) { return sum + Number(part.size || 0); }, 0),
+            parts: archive.parts.map(function (part) { return { name: part.name, size: Number(part.size) || 0 }; })
+        };
+    }
+
+    function isCacheCurrent(archive) {
+        var expected = expectedMeta(archive);
+        return Promise.all([
+            readCache('archives', 'archive:' + archive.name),
+            readCache('meta', 'meta:' + archive.name)
+        ]).then(function (values) {
+            var blob = values[0];
+            var meta = values[1];
+            return {
+                current: !!(blob && blob.size === expected.totalSize && meta && meta.version === expected.version && meta.totalSize === expected.totalSize),
+                size: blob && blob.size ? blob.size : 0,
+                expected: expected
+            };
+        });
+    }
+
+    function archivePrefix(archive) {
+        var base = String(config.baseUrl || '').replace(/\/+$/, '');
+        // baseUrl is the root containing img_pack/ and aud_pack/. This mirrors
+        // the repository layout for local hosting and the documented remote URL.
+        var folder = archive.folder ? String(archive.folder).replace(/^\/+|\/+$/g, '') : '';
+        return [base, folder].filter(Boolean).join('/');
+    }
+
+    function partUrl(archive, part) {
+        var prefix = archivePrefix(archive);
+        return (prefix ? prefix + '/' : '') + part.name;
+    }
+
+    function checkAbort() {
+        if (controller && controller.signal.aborted) throw new Error('Installation cancelled. Existing completed archives were kept.');
+    }
+
+    function readResponse(response, archive, part) {
+        var announced = response.headers && typeof response.headers.get === 'function'
+            ? Number(response.headers.get('content-length')) || 0
+            : 0;
+        if (!response.body || !response.body.getReader) {
+            return response.arrayBuffer().then(function (buffer) {
+                var bytes = new Uint8Array(buffer);
+                updatePartProgress(archive, bytes.length, part);
+                return bytes;
+            });
+        }
+        var reader = response.body.getReader();
+        var chunks = [];
+        var loaded = 0;
+        function next() {
+            checkAbort();
+            return reader.read().then(function (result) {
+                if (result.done) {
+                    var output = new Uint8Array(loaded);
+                    var offset = 0;
+                    chunks.forEach(function (chunk) { output.set(chunk, offset); offset += chunk.length; });
+                    return output;
+                }
+                chunks.push(result.value);
+                loaded += result.value.byteLength;
+                updatePartProgress(archive, loaded, part, announced);
+                return next();
+            });
+        }
+        return next();
+    }
+
+    function downloadPart(archive, part) {
+        var attempt = 0;
+        function tryOnce() {
+            checkAbort();
+            attempt++;
+            return OmoriInstallerZipLoader.request(partUrl(archive, part), { signal: controller.signal }).then(function (response) {
+                return readResponse(response, archive, part);
+            }).then(function (bytes) {
+                if (part.size && bytes.length !== Number(part.size)) {
+                    throw new Error(part.name + ' size mismatch: received ' + bytes.length + ' bytes, expected ' + part.size + '.');
+                }
+                return bytes;
+            }).catch(function (error) {
+                if (controller.signal.aborted) throw new Error('Installation cancelled. Existing completed archives were kept.');
+                if (attempt >= MAX_RETRIES) throw error;
+                log('Retrying ' + part.name + ' (' + attempt + '/' + MAX_RETRIES + '): ' + error.message);
+                return sleep(700 * Math.pow(2, attempt - 1)).then(tryOnce);
+            });
+        }
+        return tryOnce();
+    }
+
+    function updatePartProgress(archive, bytes, part) {
+        var previous = archiveLoaded[archive.name] || 0;
+        var expectedPart = Number(part.size) || bytes;
+        // A stream reports cumulative bytes, while the fallback reports once.
+        var partAlready = part.__loaded || 0;
+        part.__loaded = Math.max(partAlready, bytes);
+        archiveLoaded[archive.name] = previous - partAlready + part.__loaded;
+        var value = Math.min(archive.totalSize, archiveLoaded[archive.name]);
+        var row = rows[archive.name];
+        if (row) row.fill.style.width = Math.round(value / archive.totalSize * 100) + '%';
+        var all = completedBytes + value;
+        var percent = totalBytes ? Math.min(100, all / totalBytes * 100) : 0;
+        $('overallFill').style.width = percent.toFixed(2) + '%';
+        $('overallPercent').textContent = Math.round(percent) + '%';
+        if (running) $('overallLabel').textContent = archive.name + ' — ' + fmtBytes(value) + ' / ' + fmtBytes(archive.totalSize);
+        void expectedPart;
+    }
+
+    function concurrentParts(archive) {
+        var results = new Array(archive.parts.length);
+        var next = 0;
+        var active = 0;
+        return new Promise(function (resolve, reject) {
+            function pump() {
+                checkAbort();
+                while (active < config.concurrency && next < archive.parts.length) {
+                    (function (index) {
+                        active++;
+                        downloadPart(archive, archive.parts[index]).then(function (bytes) {
+                            results[index] = bytes;
+                            active--;
+                            if (next < archive.parts.length) pump();
+                            else if (active === 0) resolve(results);
+                        }, function (error) {
+                            active--;
+                            reject(error);
+                        });
+                    })(next++);
+                }
+            }
+            pump();
+        });
+    }
+
+    function storeArchive(archive, expected) {
+        checkAbort();
+        return concurrentParts(archive).then(function (parts) {
+            checkAbort();
+            var combined = new Uint8Array(expected.totalSize);
+            var offset = 0;
+            parts.forEach(function (part, index) {
+                if (!part || (expected.parts[index].size && part.length !== expected.parts[index].size)) {
+                    throw new Error(archive.name + ' has an incomplete part ' + (index + 1) + '.');
+                }
+                combined.set(part, offset);
+                offset += part.length;
+            });
+            if (offset !== expected.totalSize) throw new Error(archive.name + ' total size mismatch: ' + offset + ' != ' + expected.totalSize + '.');
+            var blob = typeof Blob !== 'undefined' ? new Blob([combined], { type: 'application/zip' }) : combined.buffer;
+            // Write the archive first and its metadata second. ZipLoader only
+            // treats a cache as valid when both records match the manifest.
+            return writeCache('archives', 'archive:' + archive.name, blob).then(function () {
+                return writeCache('meta', 'meta:' + archive.name, expected);
+            }).then(function () {
+                completedBytes += archive.totalSize;
+                archiveLoaded[archive.name] = archive.totalSize;
+                rows[archive.name].fill.style.width = '100%';
+                rows[archive.name].state.textContent = 'READY';
+                rows[archive.name].state.className = 'archive-state ready';
+                log(archive.name + ' cached (' + fmtBytes(archive.totalSize) + ').');
+            });
+        });
+    }
+
+    function renderArchives(cacheStates) {
+        var list = $('archiveList');
+        list.textContent = '';
+        rows = Object.create(null);
+        archives.forEach(function (archive) {
+            var item = document.createElement('div');
+            item.className = 'archive';
+            var copy = document.createElement('div');
+            var title = document.createElement('div');
+            title.className = 'archive-title';
+            title.textContent = archive.name;
+            var meta = document.createElement('div');
+            meta.className = 'archive-meta';
+            meta.textContent = archive.parts.length + ' part' + (archive.parts.length === 1 ? '' : 's') + ' · ' + fmtBytes(archive.totalSize);
+            copy.appendChild(title);
+            copy.appendChild(meta);
+            var state = document.createElement('div');
+            state.className = 'archive-state ' + (cacheStates[archive.name] ? 'ready' : '');
+            state.textContent = cacheStates[archive.name] ? 'Ready' : 'Pending';
+            var bar = document.createElement('div');
+            bar.className = 'archive-bar';
+            var fill = document.createElement('div');
+            fill.className = 'archive-fill' + (cacheStates[archive.name] ? ' ready' : '');
+            fill.style.width = cacheStates[archive.name] ? '100%' : '0%';
+            bar.appendChild(fill);
+            item.appendChild(copy);
+            item.appendChild(state);
+            item.appendChild(bar);
+            list.appendChild(item);
+            rows[archive.name] = { state: state, fill: fill };
+        });
+    }
+
+    function updateStorageStatus() {
+        if (!navigator.storage || !navigator.storage.estimate) {
+            $('storageStatus').textContent = 'Unavailable';
+            return Promise.resolve();
+        }
+        return navigator.storage.estimate().then(function (estimate) {
+            var used = fmtBytes(estimate.usage || 0);
+            var quota = fmtBytes(estimate.quota || 0);
+            $('storageStatus').textContent = used + ' / ' + quota;
+        }).catch(function () { $('storageStatus').textContent = 'Unknown'; });
+    }
+
+    function loadState() {
+        if (location.protocol === 'file:') return Promise.reject(new Error('Serve this folder over HTTP; file:// pages cannot reliably use fetch or IndexedDB.'));
+        if (!window.Promise || (!window.fetch && !window.XMLHttpRequest)) return Promise.reject(new Error('This browser is missing both fetch and XMLHttpRequest.'));
+        setStatus('Reading base.ini and manifest.json...');
+        return Promise.all([
+            fetchText('base.ini').catch(function () { return ''; }),
+            fetchJson('manifest.json')
+        ]).then(function (values) {
+            config = parseIni(values[0]);
+            var requested = parseInt(config.concurrency, 10);
+            config.concurrency = Math.max(1, Math.min(16, isFinite(requested) ? requested : DEFAULT_CONCURRENCY));
+            manifest = values[1];
+            if (!manifest || !manifest.archives) throw new Error('manifest.json does not contain an archives object.');
+            archives = REQUIRED.map(function (name) {
+                var archive = manifest.archives[name];
+                if (!archive || !Array.isArray(archive.parts) || !archive.parts.length) throw new Error('manifest.json is missing ' + name + '.');
+                var copy = { name: name, folder: archive.folder || '', parts: archive.parts.slice() };
+                copy.totalSize = Number(archive.totalSize) || copy.parts.reduce(function (sum, part) { return sum + Number(part.size || 0); }, 0);
+                return copy;
+            });
+            totalBytes = archives.reduce(function (sum, archive) { return sum + archive.totalSize; }, 0);
+            $('archiveCount').textContent = String(archives.length);
+            $('totalSize').textContent = fmtBytes(totalBytes);
+            $('noticeSize').textContent = fmtBytes(totalBytes);
+            return Promise.all(archives.map(function (archive) {
+                return isCacheCurrent(archive).then(function (state) { return { archive: archive, state: state }; });
+            }));
+        }).then(function (states) {
+            var current = Object.create(null);
+            completedBytes = 0;
+            states.forEach(function (entry) {
+                current[entry.archive.name] = entry.state.current;
+                if (entry.state.current) completedBytes += entry.archive.totalSize;
+            });
+            renderArchives(current);
+            var percent = totalBytes ? completedBytes / totalBytes * 100 : 0;
+            $('overallFill').style.width = percent.toFixed(2) + '%';
+            $('overallPercent').textContent = Math.round(percent) + '%';
+            if (completedBytes === totalBytes) {
+                $('overallLabel').textContent = 'Cache is complete';
+                setStatus('Everything required is already cached. You can open index.html.', 'ok');
+                $('installButton').textContent = 'Complete';
+            } else {
+                $('overallLabel').textContent = 'Ready to prepare ' + fmtBytes(totalBytes - completedBytes);
+                setStatus('Manifest validated. Existing matching archives will be skipped.');
+                $('installButton').textContent = completedBytes ? 'Install remaining' : 'Install assets';
+            }
+            $('installButton').disabled = false;
+            return updateStorageStatus();
+        });
+    }
+
+    function install() {
+        if (running || !archives.length) return;
+        running = true;
+        controller = OmoriInstallerZipLoader.makeCancellation();
+        $('installButton').disabled = true;
+        $('refreshButton').disabled = true;
+        $('cancelButton').disabled = false;
+        setStatus('Requesting persistent browser storage...');
+        var persist = navigator.storage && navigator.storage.persist ? navigator.storage.persist().catch(function () { return false; }) : Promise.resolve(false);
+        persist.then(function (persistent) {
+            log(persistent ? 'Persistent storage granted.' : 'Persistent storage was not granted; the browser may evict cached data under storage pressure.');
+            var chain = Promise.resolve();
+            archives.forEach(function (archive) {
+                chain = chain.then(function () {
+                    checkAbort();
+                    return isCacheCurrent(archive).then(function (state) {
+                        if (state.current) {
+                            archiveLoaded[archive.name] = archive.totalSize;
+                            rows[archive.name].fill.style.width = '100%';
+                            rows[archive.name].fill.className = 'archive-fill ready';
+                            rows[archive.name].state.textContent = 'Ready';
+                            rows[archive.name].state.className = 'archive-state ready';
+                            log(archive.name + ' already matches the manifest; skipped.');
+                            return;
+                        }
+                        archiveLoaded[archive.name] = 0;
+                        rows[archive.name].fill.className = 'archive-fill';
+                        rows[archive.name].state.textContent = 'Downloading';
+                        rows[archive.name].state.className = 'archive-state active';
+                        setStatus('Downloading ' + archive.name + ' (' + archive.parts.length + ' parts)...');
+                        return storeArchive(archive, expectedMeta(archive));
+                    });
+                });
+            });
+            return chain;
+        }).then(function () {
+            checkAbort();
+            $('overallFill').style.width = '100%';
+            $('overallPercent').textContent = '100%';
+            $('overallLabel').textContent = 'Cache is complete';
+            setStatus('All ZIP archives are cached. Open index.html to play.', 'ok');
+            $('installButton').textContent = 'Complete';
+            log('Installation complete. No game code was run by this page.');
+        }).catch(function (error) {
+            if (error && error.message === 'Installation cancelled. Existing completed archives were kept.') {
+                setStatus(error.message);
+            } else {
+                fail(error);
+            }
+        }).then(function () {
+            running = false;
+            controller = null;
+            $('installButton').disabled = false;
+            $('refreshButton').disabled = false;
+            $('cancelButton').disabled = true;
+            updateStorageStatus();
+        });
+    }
+
+    function cancel() {
+        if (controller) controller.abort();
+    }
+
+    $('installButton').addEventListener('click', install);
+    $('cancelButton').addEventListener('click', cancel);
+    $('refreshButton').addEventListener('click', function () {
+        if (!running) {
+            $('installButton').disabled = true;
+            loadState().catch(fail).then(function () { updateStorageStatus(); });
+        }
+    });
+
+    loadState().catch(function (error) {
+        fail(error);
+        $('installButton').disabled = true;
+    });
+})();
+</script>
+</body>
+</html>
