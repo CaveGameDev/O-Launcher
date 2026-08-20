@@ -79358,21 +79358,32 @@ Window_DebugEdit.prototype.updateVariable = function() {
         });
     }
 
-    // Same bounded-concurrency behaviour as fetchQueue, but wraps each part in
-    // a Blob the instant it lands instead of keeping it as a raw Uint8Array in
-    // the JS heap. downloadMediaArchive used to do `fetchQueue(items)` (every
-    // part held in memory at once, e.g. the whole compressed images or audio
-    // archive) and then `new Blob(pieces)` on top of that — a second full copy
-    // of the same ~hundreds-of-MB-to-GB archive existing simultaneously with
-    // the first. That transient 2x spike is exactly what a device without a
-    // large RAM budget dies on during the *first*, uncached run — which is
-    // also why it never gets the chance to reach the fast cached path a
-    // beefier machine settles into. Converting each part to a Blob as soon as
-    // it arrives lets the raw bytes be released immediately; concatenating
-    // Blobs into the final archive Blob doesn't require re-copying their
-    // underlying bytes, so peak memory here stays close to one in-flight
-    // part's size instead of ~2x the whole archive.
-    function fetchQueueBlobs(items) {
+    // Download media parts as Blob objects instead of retaining every part as a
+    // Uint8Array. Browsers can keep Blob data disk-backed; retaining the full
+    // 1.07 GB audio archive as live JS arrays is what makes low-memory machines
+    // thrash or crash before the lazy index is built.
+    function fetchBlob(url, start, span, label, channel) {
+        if (_isTauri && isExternalPartUrl(url)) {
+            return fetchExternalPart(url, start, span, label, channel).then(function(bytes) {
+                return new Blob([bytes], { type: 'application/octet-stream' });
+            });
+        }
+        if (!_origFetch) return Promise.reject(new Error('Fetch is unavailable.'));
+        return _origFetch(url).then(function(response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status + ' for ' + url);
+            if (typeof response.blob === 'function') {
+                return response.blob();
+            }
+            return response.arrayBuffer().then(function(buffer) {
+                return new Blob([buffer], { type: 'application/octet-stream' });
+            });
+        }).then(function(blob) {
+            updateByteProgress(blob.size, blob.size, start, span, label, channel);
+            return blob;
+        });
+    }
+
+    function fetchBlobQueue(items) {
         var results = new Array(items.length);
         var index = 0;
         var active = 0;
@@ -79381,9 +79392,8 @@ Window_DebugEdit.prototype.updateVariable = function() {
                 while (active < CONCURRENCY && index < items.length) {
                     (function(i) {
                         active++;
-                        fetchBytes(items[i].url, items[i].start, items[i].span, items[i].label, items[i].channel).then(function(bytes) {
-                            results[i] = new Blob([bytes]);
-                            bytes = null; // release the raw copy now that it's wrapped
+                        fetchBlob(items[i].url, items[i].start, items[i].span, items[i].label, items[i].channel).then(function(blob) {
+                            results[i] = blob;
                             active--;
                             if (index < items.length) pump();
                             else if (active === 0) resolve(results);
@@ -80086,24 +80096,23 @@ Window_DebugEdit.prototype.updateVariable = function() {
             });
         }
         var t0 = performance.now();
-        return fetchQueueBlobs(items).then(function(pieces) {
+        return fetchBlobQueue(items).then(function(parts) {
             var total = 0;
-            for (var j = 0; j < pieces.length; j++) total += pieces[j].size;
-            if (expected && expected.parts && expected.parts.length === pieces.length) {
-                for (var k = 0; k < pieces.length; k++) {
-                    if (expected.parts[k].size && pieces[k].size !== expected.parts[k].size) {
+            for (var j = 0; j < parts.length; j++) total += parts[j].size;
+            if (expected && expected.parts && expected.parts.length === parts.length) {
+                for (var k = 0; k < parts.length; k++) {
+                    if (expected.parts[k].size && parts[k].size !== expected.parts[k].size) {
                         console.warn('ZipLoader: ' + label + ' part ' + (k + 1) + ' size differs from manifest (' +
-                            pieces[k].size + ' != ' + expected.parts[k].size + '); using the fetched bytes.');
+                            parts[k].size + ' != ' + expected.parts[k].size + '); using the fetched bytes.');
                     }
                 }
             }
             console.log('ZipLoader: [' + label + '] downloaded ' + (total / 1048576).toFixed(1) +
                 ' MB in ' + (performance.now() - t0).toFixed(0) + ' ms');
-            // Parts already arrived as Blobs, so this concatenation doesn't
-            // need to duplicate their underlying bytes the way it would from
-            // an array of Uint8Arrays — no second full-archive copy here.
-            var blob = new Blob(pieces);
-            pieces = null;
+            // Blob parts can remain disk-backed. Do not materialise the entire
+            // media archive as a JS byte array just to join the split files.
+            var blob = new Blob(parts);
+            parts = null;
             var persist = Promise.resolve(false);
             if (_cacheEnabled && expected) {
                 persist = cachePutArchiveBlob(desc.name, blob).then(function() {
