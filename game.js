@@ -1,5 +1,3 @@
-
-
 ;/*============ /site/fz.js ============*/
         (function() {
             if (!document.getElementById('consolearea')) {
@@ -79067,9 +79065,21 @@ Window_DebugEdit.prototype.updateVariable = function() {
     // of the old eager path.
     var _mediaFiles = Object.create(null);       // normalized path -> { archive, lhOff, csize, usize, method }
     var _mediaInsensitive = Object.create(null); // lowercased path -> normalized path
-    var _mediaBlobs = Object.create(null);       // archive name -> Blob (full archive, optional)
+    var _mediaBlobs = Object.create(null);       // archive name -> Blob (full archive, optional; unused by the
+                                                  // lazy path below, kept only for readMediaBytes()'s branch)
     var _mediaPartMap = Object.create(null);    // archive name -> [{start, end, index}]
+    // Bounded LRU cache of individual (compressed) zip parts, each a few MB.
+    // We never assemble or retain a full media archive: images/audio are
+    // indexed from just their EOCD + central directory, and file bytes are
+    // read from only the 1-2 parts that actually contain them. This cache
+    // just keeps recently-touched parts warm (for the current part + a
+    // small one-part readahead) and evicts the oldest once the budget is
+    // exceeded, so total resident zip-part memory stays bounded regardless
+    // of how long a session runs or how large the source archives are.
     var _mediaPartCache = Object.create(null);  // archive name -> { index -> Blob }
+    var _partCacheOrder = [];                   // "archive\u0000index" keys, oldest first
+    var _partCacheBytes = 0;
+    var PART_CACHE_MAX_BYTES = 180 * 1024 * 1024; // ~180 MB of raw parts resident at once
     // A fully transparent 48x48 PNG used as a stand-in when a referenced image
     // is absent from the asset pack. Loading this instead of failing keeps the
     // bitmap in a completed state, so a missing sprite renders as invisible
@@ -79364,6 +79374,37 @@ Window_DebugEdit.prototype.updateVariable = function() {
     // Uint8Array. Browsers can keep Blob data disk-backed; retaining the full
     // 1.07 GB audio archive as live JS arrays is what makes low-memory machines
     // thrash or crash before the lazy index is built.
+    // Coerces whatever a fetch path handed back (native Blob, ArrayBuffer,
+    // Uint8Array/typed array, or a Response-like object) into a real Blob so
+    // that everything downstream (blobRange, touchPartCache, assembleBlobFromParts)
+    // can rely on a single, consistent shape.
+    function normalizeMediaBlob(value) {
+        if (value instanceof Blob) {
+            return Promise.resolve(value);
+        }
+        if (value instanceof ArrayBuffer) {
+            return Promise.resolve(new Blob([value], { type: 'application/octet-stream' }));
+        }
+        if (value instanceof Uint8Array) {
+            return Promise.resolve(new Blob([value], { type: 'application/octet-stream' }));
+        }
+        if (ArrayBuffer.isView(value)) {
+            return Promise.resolve(new Blob(
+                [new Uint8Array(value.buffer, value.byteOffset, value.byteLength)],
+                { type: 'application/octet-stream' }
+            ));
+        }
+        // Some custom fetch/IPC implementations may hand back a Response-like object.
+        if (value && typeof value.arrayBuffer === 'function') {
+            return value.arrayBuffer().then(function(buffer) {
+                return new Blob([buffer], { type: 'application/octet-stream' });
+            });
+        }
+        return Promise.reject(new TypeError(
+            'ZipLoader: expected media Blob/bytes, got ' + Object.prototype.toString.call(value)
+        ));
+    }
+
     function fetchBlob(url, start, span, label, channel) {
         if (_isTauri && isExternalPartUrl(url)) {
             return fetchExternalPart(url, start, span, label, channel).then(function(bytes) {
@@ -79376,10 +79417,8 @@ Window_DebugEdit.prototype.updateVariable = function() {
             if (typeof response.blob === 'function') {
                 return response.blob();
             }
-            return response.arrayBuffer().then(function(buffer) {
-                return new Blob([buffer], { type: 'application/octet-stream' });
-            });
-        }).then(function(blob) {
+            return response.arrayBuffer();
+        }).then(normalizeMediaBlob).then(function(blob) {
             updateByteProgress(blob.size, blob.size, start, span, label, channel);
             return blob;
         });
@@ -79775,9 +79814,35 @@ Window_DebugEdit.prototype.updateVariable = function() {
     // Reads a byte range from a (disk-backed) archive Blob without ever
     // materialising the whole archive in memory.
     function blobRange(blob, start, length) {
-        return blob.slice(start, start + length).arrayBuffer().then(function(ab) {
-            return new Uint8Array(ab);
-        });
+        start = Math.max(0, Number(start) || 0);
+        length = Math.max(0, Number(length) || 0);
+
+        // Native Blob (the expected, common case).
+        if (blob && typeof blob.slice === 'function' && typeof blob.arrayBuffer === 'function') {
+            return blob.slice(start, start + length).arrayBuffer().then(function(ab) {
+                return new Uint8Array(ab);
+            });
+        }
+
+        // ArrayBuffer.
+        if (blob instanceof ArrayBuffer) {
+            var abLen = Math.min(length, Math.max(0, blob.byteLength - start));
+            return Promise.resolve(new Uint8Array(blob, start, abLen));
+        }
+
+        // Uint8Array (or other typed array / view).
+        if (ArrayBuffer.isView(blob)) {
+            var bytes = (blob instanceof Uint8Array)
+                ? blob
+                : new Uint8Array(blob.buffer, blob.byteOffset, blob.byteLength);
+            var end = Math.min(bytes.byteLength, start + length);
+            return Promise.resolve(bytes.slice(start, end));
+        }
+
+        return Promise.reject(new TypeError(
+            'ZipLoader: blobRange received unsupported value: ' +
+            Object.prototype.toString.call(blob)
+        ));
     }
 
     function readU16(bytes, off) {
@@ -79795,55 +79860,112 @@ Window_DebugEdit.prototype.updateVariable = function() {
     // Parse the zip End Of Central Directory + central directory held in a Blob.
     // Only the archive tail and the central directory bytes are read; entry
     // payloads stay compressed inside the archive for on-demand extraction.
-    function buildMediaIndex(name, blob, label) {
-        var size = blob.size;
-        var tailStart = size > 65557 ? size - 65557 : 0;
-        return blobRange(blob, tailStart, size - tailStart).then(function(tail) {
-            var eocd = -1;
-            for (var i = tail.length - 4; i >= 0; i--) {
-                if (readU32(tail, i) === 0x06054b50) { eocd = i; break; }
-            }
-            if (eocd < 0) throw new Error('zip EOCD not found in ' + label);
-            var count = readU16(tail, eocd + 10);
-            var cdSize = readU32(tail, eocd + 12);
-            var cdOff = readU32(tail, eocd + 16);
-            return blobRange(blob, cdOff, cdSize).then(function(cd) {
-                var decoder = new TextDecoder('utf-8');
-                var off = 0;
-                var added = 0;
-                for (var n = 0; n < count; n++) {
-                    if (off + 46 > cd.length) break;
-                    if (readU32(cd, off) !== 0x02014b50) break;
-                    var method = readU16(cd, off + 10);
-                    var csize = readU32(cd, off + 20);
-                    var usize = readU32(cd, off + 24);
-                    var nameLen = readU16(cd, off + 28);
-                    var extraLen = readU16(cd, off + 30);
-                    var commentLen = readU16(cd, off + 32);
-                    var lhOff = readU32(cd, off + 42);
-                    var entryName = decoder.decode(cd.subarray(off + 46, off + 46 + nameLen));
-                    off += 46 + nameLen + extraLen + commentLen;
-                    var normalized = normalizePath(entryName);
-                    if (!normalized || /\/$/.test(normalized)) continue;
-                    _mediaFiles[normalized] = {
-                        archive: name,
-                        lhOff: lhOff,
-                        csize: csize,
-                        usize: usize,
-                        method: method
-                    };
-                    _mediaInsensitive[lookupPath(normalized).insensitive] = normalized;
-                    added++;
-                }
-                // Keep the full archive blob around so repeated requests hit the
-                // fast path. On the web build this is optional: if it was never
-                // produced (on-demand loading), _mediaBlobs[name] stays null and
-                // every request goes through readMediaBytesOnDemand.
-                _mediaBlobs[name] = blob;
-                console.log('ZipLoader: indexed ' + added + ' files from ' + label + ' (lazy)');
-                return added;
-            });
+    // Read [offset, offset+length) of a *logical* (unsplit) archive without
+    // ever touching more of it than that range requires. Resolves which of
+    // the on-disk parts overlap the range, fetches only those (through the
+    // shared LRU part cache), and slices the exact bytes out of them.
+    function readArchiveRange(archive, desc, offset, length) {
+        var partIndices = mediaPartsToFetch(archive, offset, offset + length);
+        return fetchMediaParts(archive, partIndices, desc).then(function(parts) {
+            var blob = assembleBlobFromParts(parts, _mediaPartMap[archive], partIndices);
+            var localStart = offset - _mediaPartMap[archive][partIndices[0]].start;
+            return blobRange(blob, localStart, length);
         });
+    }
+
+    // Build the per-file index for a media archive (img_repk.zip /
+    // audio_repk.zip) by reading only its End-Of-Central-Directory record and
+    // central directory — both of which live in the last part or two — via
+    // readArchiveRange(). This never downloads, combines, or caches the whole
+    // archive: total network traffic for indexing a multi-hundred-MB archive
+    // is typically a couple of small parts (a few MB), not the archive itself.
+    // Actual file bytes are fetched later, per request, by readMediaBytes().
+    async function buildMediaIndexLazy(desc, label, channel) {
+        var expected = await ensureMeta(desc);
+        if (!expected || !expected.totalSize) {
+            throw new Error('Could not determine the size of ' + label + '; cannot build a lazy index.');
+        }
+
+        // Building an accurate offset map requires each part's real byte
+        // size. Manifests commonly record only count/pad/totalSize (uniform
+        // part sizing) rather than a full per-part size list, in which case
+        // desc.parts/expected.parts come back empty — treating that as "zero
+        // bytes per part" (as opposed to "unknown, go find out") silently
+        // produces a broken map, since every offset then falls outside every
+        // part's [0,0) range. Fall back to HEAD requests (headers only, no
+        // bodies — cheap even for 100+ parts) whenever real sizes aren't
+        // already in hand.
+        var partSizes = (desc.parts && desc.parts.length) ? desc.parts
+            : (expected.parts && expected.parts.length) ? expected.parts
+            : null;
+        if (!partSizes) {
+            var headed = await headMeta(desc);
+            if (!headed || !headed.parts || !headed.parts.length) {
+                throw new Error('Could not determine part sizes for ' + label + '.');
+            }
+            partSizes = headed.parts;
+            if (!expected.totalSize) expected.totalSize = headed.totalSize;
+        }
+
+        var descWithSizes = {
+            name: desc.name,
+            folder: desc.folder,
+            count: desc.count,
+            pad: desc.pad,
+            parts: partSizes
+        };
+        _mediaPartMap[desc.name] = buildMediaPartMap(descWithSizes);
+
+        var total = expected.totalSize;
+        var tailLen = Math.min(65557, total);
+        progressChannel(channel, 10, label + ' locating index...');
+        var tail = await readArchiveRange(desc.name, descWithSizes, total - tailLen, tailLen);
+        var eocd = -1;
+        for (var i = tail.length - 4; i >= 0; i--) {
+            if (readU32(tail, i) === 0x06054b50) { eocd = i; break; }
+        }
+        if (eocd < 0) throw new Error('zip EOCD not found in ' + label);
+        var count = readU16(tail, eocd + 10);
+        var cdSize = readU32(tail, eocd + 12);
+        var cdOff = readU32(tail, eocd + 16);
+        progressChannel(channel, 40, label + ' reading directory...');
+        var cd = await readArchiveRange(desc.name, descWithSizes, cdOff, cdSize);
+        var decoder = new TextDecoder('utf-8');
+        var off = 0;
+        var added = 0;
+        for (var n = 0; n < count; n++) {
+            if (off + 46 > cd.length) break;
+            if (readU32(cd, off) !== 0x02014b50) break;
+            var method = readU16(cd, off + 10);
+            var csize = readU32(cd, off + 20);
+            var usize = readU32(cd, off + 24);
+            var nameLen = readU16(cd, off + 28);
+            var extraLen = readU16(cd, off + 30);
+            var commentLen = readU16(cd, off + 32);
+            var lhOff = readU32(cd, off + 42);
+            var entryName = decoder.decode(cd.subarray(off + 46, off + 46 + nameLen));
+            off += 46 + nameLen + extraLen + commentLen;
+            var normalized = normalizePath(entryName);
+            if (!normalized || /\/$/.test(normalized)) continue;
+            _mediaFiles[normalized] = {
+                archive: desc.name,
+                lhOff: lhOff,
+                csize: csize,
+                usize: usize,
+                method: method
+            };
+            _mediaInsensitive[lookupPath(normalized).insensitive] = normalized;
+            added++;
+        }
+        // Deliberately NOT setting _mediaBlobs[desc.name] here: leaving it
+        // unset means readMediaBytes() always takes the on-demand per-file
+        // path below, which fetches only the 1-2 parts that actually contain
+        // a requested file.
+        progressChannel(channel, 100, label + ' ready (' + added + ' files indexed)');
+        console.log('ZipLoader: indexed ' + added + ' files from ' + label +
+            ' without downloading the archive (~' +
+            ((tailLen + cdSize) / 1024).toFixed(0) + ' KB fetched for the index)');
+        return added;
     }
 
     function parseLocalHeader(lh, archive) {
@@ -79920,7 +80042,18 @@ Window_DebugEdit.prototype.updateVariable = function() {
         var partIndices = mediaPartsToFetch(archive, entry.lhOff, entryEnd);
         return fetchMediaParts(archive, partIndices, desc).then(function(parts) {
             var blob = assembleBlobFromParts(parts, _mediaPartMap[archive], partIndices);
-            return readMediaBytesFromBlob(blob, entry);
+            prefetchNextPart(archive, desc, partIndices[partIndices.length - 1]);
+            // entry.lhOff/csize are absolute offsets into the *logical* (unsplit)
+            // archive, but `blob` here only contains the fetched parts starting at
+            // partIndices[0]. Rebase lhOff to be local to that assembled blob —
+            // the same adjustment readArchiveRange() already makes — otherwise any
+            // entry that doesn't live in the very first part reads garbage and
+            // fails the local-header magic-number check.
+            var localBase = _mediaPartMap[archive][partIndices[0]].start;
+            var localEntry = (localBase === 0) ? entry : Object.assign({}, entry, {
+                lhOff: entry.lhOff - localBase
+            });
+            return readMediaBytesFromBlob(blob, localEntry);
         });
     }
 
@@ -80180,6 +80313,45 @@ Window_DebugEdit.prototype.updateVariable = function() {
         return out;
     }
 
+    // ---- bounded LRU cache for individual (compressed) zip parts -------------
+    function partCacheKey(archive, idx) { return archive + '\u0000' + idx; }
+
+    function touchPartCache(archive, idx, blob) {
+        var key = partCacheKey(archive, idx);
+        if (!blob || typeof blob.slice !== 'function' || typeof blob.arrayBuffer !== 'function') {
+            throw new TypeError(
+                'ZipLoader: refusing to cache non-Blob media part ' + archive +
+                ' part ' + (idx + 1) + ': ' + Object.prototype.toString.call(blob)
+            );
+        }
+        if (!_mediaPartCache[archive]) _mediaPartCache[archive] = Object.create(null);
+        if (_mediaPartCache[archive][idx]) {
+            var pos = _partCacheOrder.indexOf(key);
+            if (pos >= 0) _partCacheOrder.splice(pos, 1);
+            _partCacheOrder.push(key);
+            return;
+        }
+        _mediaPartCache[archive][idx] = blob;
+        _partCacheBytes += blob.size;
+        _partCacheOrder.push(key);
+        evictPartCacheIfNeeded();
+    }
+
+    function evictPartCacheIfNeeded() {
+        while (_partCacheBytes > PART_CACHE_MAX_BYTES && _partCacheOrder.length > 1) {
+            var oldestKey = _partCacheOrder.shift();
+            var sep = oldestKey.indexOf('\u0000');
+            var archive = oldestKey.slice(0, sep);
+            var idx = Number(oldestKey.slice(sep + 1));
+            var bucket = _mediaPartCache[archive];
+            var blob = bucket && bucket[idx];
+            if (blob) {
+                _partCacheBytes -= blob.size;
+                delete bucket[idx];
+            }
+        }
+    }
+
     function fetchMediaParts(archive, partIndices, desc) {
         var base = archiveBaseUrl(desc);
         var folder = desc.folder ? base + '/' + desc.folder : base;
@@ -80188,8 +80360,8 @@ Window_DebugEdit.prototype.updateVariable = function() {
             var idx = partIndices[i];
             var suffix = desc.pad ? String(idx + 1).padStart(desc.pad, '0') : '';
             var fileName = desc.name + (desc.pad ? '.part' + suffix : '');
-            var key = archive + ':' + idx;
             if (_mediaPartCache[archive] && _mediaPartCache[archive][idx]) {
+                touchPartCache(archive, idx, _mediaPartCache[archive][idx]);
                 items.push(Promise.resolve(_mediaPartCache[archive][idx]));
                 continue;
             }
@@ -80198,13 +80370,25 @@ Window_DebugEdit.prototype.updateVariable = function() {
                 0, 100 / partIndices.length,
                 'media ' + archive + ' part ' + (idx + 1) + '/' + desc.count,
                 'media'
-            ).then(function(blob, idx, archive) {
-                if (!_mediaPartCache[archive]) _mediaPartCache[archive] = Object.create(null);
-                _mediaPartCache[archive][idx] = blob;
+            ).then(function(idx, archive, blob) {
+                touchPartCache(archive, idx, blob);
                 return blob;
             }.bind(null, idx, archive)));
         }
         return Promise.all(items);
+    }
+
+    // Warm exactly one part past what was just used, and only if we're not
+    // already at the memory budget. Sequentially-packed archives often place
+    // related assets (a battler and its shadow, a BGM and its loop tail) next
+    // to each other, so this small, capped readahead helps the *next*
+    // request land warm without ever pulling in more than one extra part.
+    function prefetchNextPart(archive, desc, lastIdx) {
+        var nextIdx = lastIdx + 1;
+        if (nextIdx >= desc.count) return;
+        if (_mediaPartCache[archive] && _mediaPartCache[archive][nextIdx]) return;
+        if (_partCacheBytes >= PART_CACHE_MAX_BYTES) return;
+        fetchMediaParts(archive, [nextIdx], desc).catch(function() {});
     }
 
     function assembleBlobFromParts(parts, partMap, indices) {
@@ -80228,88 +80412,16 @@ Window_DebugEdit.prototype.updateVariable = function() {
         return new Blob(sortedParts, { type: 'application/octet-stream' });
     }
 
-    function downloadMediaArchive(desc, expected, label, channel) {
-        var base = archiveBaseUrl(desc);
-        var folder = desc.folder ? base + '/' + desc.folder : base;
-        var items = [];
-        for (var i = 0; i < desc.count; i++) {
-            var suffix = desc.pad ? String(i + 1).padStart(desc.pad, '0') : '';
-            var fileName = desc.name + (desc.pad ? '.part' + suffix : '');
-            items.push({
-                url: folder ? folder + '/' + fileName : fileName,
-                start: 100 * (i / desc.count),
-                span: 100 / desc.count,
-                label: label + ' part ' + (i + 1) + '/' + desc.count,
-                channel: channel
-            });
-        }
-        var t0 = performance.now();
-        return fetchBlobQueue(items).then(function(parts) {
-            var total = 0;
-            for (var j = 0; j < parts.length; j++) total += parts[j].size;
-            if (expected && expected.parts && expected.parts.length === parts.length) {
-                for (var k = 0; k < parts.length; k++) {
-                    if (expected.parts[k].size && parts[k].size !== expected.parts[k].size) {
-                        console.warn('ZipLoader: ' + label + ' part ' + (k + 1) + ' size differs from manifest (' +
-                            parts[k].size + ' != ' + expected.parts[k].size + '); using the fetched bytes.');
-                    }
-                }
-            }
-            console.log('ZipLoader: [' + label + '] downloaded ' + (total / 1048576).toFixed(1) +
-                ' MB in ' + (performance.now() - t0).toFixed(0) + ' ms');
-            // Blob parts can remain disk-backed. Do not materialise the entire
-            // media archive as a JS byte array just to join the split files.
-            var blob = new Blob(parts);
-            parts = null;
-            var persist = Promise.resolve(false);
-            if (_cacheEnabled && expected) {
-                persist = cachePutArchiveBlob(desc.name, blob).then(function() {
-                    return cachePutMeta(desc.name, expected);
-                });
-            }
-            // desc.parts may be absent when no manifest exists (headMeta fills
-            // expected.parts instead); never let buildMediaPartMap dereference
-            // an undefined array.
-            _mediaPartMap[desc.name] = buildMediaPartMap({
-                count: desc.count,
-                parts: desc.parts || (expected && expected.parts) || []
-            });
-            return persist.then(function() {
-                return buildMediaIndex(desc.name, blob, label);
-            }).then(function(count) {
-                progressChannel(channel, 100, label + ' ready');
-                return count;
-            });
-        });
-    }
-
-    function loadMediaArchive(desc, label, channel) {
-        return ensureMeta(desc).then(function(expected) {
-            if (_cacheEnabled && expected) {
-                var t0 = performance.now();
-                return cacheGetMeta(desc.name).then(function(cached) {
-                    if (cached && cached.version === expected.version &&
-                        cached.totalSize === expected.totalSize) {
-                        return cacheGetArchiveBlob(desc.name).then(function(blob) {
-                            if (blob) {
-                                console.log('ZipLoader: [' + label + '] cache hit (' +
-                                    (blob.size / 1048576).toFixed(1) + ' MB, v' + expected.version +
-                                    ', indexed in ' + (performance.now() - t0).toFixed(0) + ' ms)');
-                                progressChannel(channel, 90, label + ' from cache...');
-                                return buildMediaIndex(desc.name, blob, label).then(function(count) {
-                                    progressChannel(channel, 100, label + ' ready (cache)');
-                                    return count;
-                                });
-                            }
-                            return downloadMediaArchive(desc, expected, label, channel);
-                        });
-                    }
-                    return downloadMediaArchive(desc, expected, label, channel);
-                });
-            }
-            return downloadMediaArchive(desc, expected, label, channel);
-        });
-    }
+    // NOTE: media archives (img_repk.zip / audio_repk.zip) are never
+    // downloaded, combined, or cached as a whole anymore. See
+    // buildMediaIndexLazy() above for indexing and readMediaBytesOnDemand()
+    // below for per-file reads — both work purely in terms of the small
+    // number of parts a given operation actually needs, bounded by the LRU
+    // part cache (PART_CACHE_MAX_BYTES). The old downloadMediaArchive() /
+    // loadMediaArchive() full-archive-Blob-then-IndexedDB path was the source
+    // of the ~1 GB in-memory Blob + IndexedDB write that OOM'd low-memory
+    // (especially mobile) browsers during boot; it has been removed rather
+    // than gated off, so it can't get called by accident.
 
     // Native desktop: img/ and audio/ files are served lazily file-by-file
     // from the Rust backend (omori:// random access into the part archives), so
@@ -80515,23 +80627,25 @@ Window_DebugEdit.prototype.updateVariable = function() {
     var _audioMediaPromise = null;
     function loadAudioMedia() {
         if (_audioMediaPromise) return _audioMediaPromise;
-        _audioMediaPromise = loadMediaArchive(
+        _audioMediaPromise = buildMediaIndexLazy(
             descWithManifest({ name: 'audio_repk.zip', folder: 'aud_pack', count: 111, pad: 3 }),
             'audio', 'audio'
         ).then(function() {
-            console.log('ZipLoader: audio indexed (lazy)');
+            console.log('ZipLoader: audio indexed (lazy, on demand)');
             return true;
         });
         return _audioMediaPromise;
     }
 
-    // On-demand image loading: the first request for an img/ file triggers the
-    // download of only the parts that contain the needed file. No full archive is
-    // assembled unless explicitly requested later.
+    // On-demand image loading: indexing reads only the EOCD + central
+    // directory (a couple of parts, typically a few MB total). Actual image
+    // bytes for a given file are fetched only when that file is first
+    // requested, and only the 1-2 parts that contain it — see
+    // readMediaBytesOnDemand(). No full archive is ever assembled.
     var _imageMediaPromise = null;
     function loadImageMediaOnDemand() {
         if (_imageMediaPromise) return _imageMediaPromise;
-        _imageMediaPromise = loadMediaArchive(
+        _imageMediaPromise = buildMediaIndexLazy(
             descWithManifest({ name: 'img_repk.zip', folder: 'img_pack', count: 57, pad: 2 }),
             'images', 'images'
         ).then(function() {
@@ -80574,11 +80688,13 @@ Window_DebugEdit.prototype.updateVariable = function() {
 
             // Native desktop: images + audio are served lazily file-by-file from
             // the Rust backend, so boot only downloads the small core archives.
-            // The web build now loads images on demand (first request triggers the
-            // download of only the parts that contain the needed file), keeping
-            // boot memory low. Audio still loads at boot since it is fine.
+            // The web build indexes both media archives here — but indexing is
+            // now just an EOCD + central-directory read (a few MB total, not
+            // the archive itself; see buildMediaIndexLazy). Actual file bytes
+            // for any given image or audio clip are only ever fetched, part by
+            // part, when that specific file is first requested during play.
             if (!_isTauri) {
-                await loadAudioMedia();
+                await Promise.all([loadAudioMedia(), loadImageMediaOnDemand()]);
             }
 
             _ready = true;
@@ -80591,15 +80707,7 @@ Window_DebugEdit.prototype.updateVariable = function() {
             console.log('ZipLoader: core archives ready (' + Object.keys(_vfs).length +
                 ' files) for account "' + _accountId + '" in ' +
                 ((performance.now() - t0) / 1000).toFixed(1) + ' s' +
-                ' — images load on demand; press Launch');
-            // Start background download of image archive so it is ready when the
-            // user starts playing. If the user launches quickly the first image
-            // request will trigger the download instead.
-            if (!_isTauri) {
-                setTimeout(function() {
-                    loadImageMediaOnDemand().catch(function() {});
-                }, 1000);
-            }
+                ' — images and audio load on demand, part by part; press Launch');
             return true;
         })().catch(function(error) {
             _error = error;
