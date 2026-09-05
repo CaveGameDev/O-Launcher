@@ -79053,6 +79053,74 @@ Window_DebugEdit.prototype.updateVariable = function() {
     var _resolveLaunch = null;
     var _error = null;
     var _origFetch = window.fetch ? window.fetch.bind(window) : null;
+
+    // Mobile networks (cellular hand-offs, WiFi->cellular switches, aggressive
+    // background throttling) far more commonly leave a TCP connection open but
+    // silently dead than desktop connections do: no error, no close event ever
+    // reaches fetch(), the returned promise just never settles. None of the
+    // media-loading code below had a timeout, so a single stalled request among
+    // the many concurrent part/index fetches during boot would hang the whole
+    // Promise.all() chain forever with no console error — exactly a stuck
+    // loading screen. This wraps fetch with a hard timeout plus a couple of
+    // quick retries so a stalled request fails fast and gets another shot
+    // instead of freezing boot indefinitely.
+    var FETCH_TIMEOUT_MS = 15000;
+    var FETCH_RETRIES = 2;
+
+    // Races an arbitrary promise (e.g. response.blob()/response.arrayBuffer(),
+    // which read the body internally and can stall mid-transfer on mobile even
+    // after the initial fetch() has already resolved) against a timeout.
+    function withTimeout(promise, timeoutMs, message) {
+        timeoutMs = timeoutMs || FETCH_TIMEOUT_MS;
+        return new Promise(function(resolve, reject) {
+            var settled = false;
+            var timer = setTimeout(function() {
+                if (settled) return;
+                settled = true;
+                reject(new Error(message || ('ZipLoader: operation timed out after ' + timeoutMs + 'ms')));
+            }, timeoutMs);
+            promise.then(function(value) {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                resolve(value);
+            }, function(err) {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                reject(err);
+            });
+        });
+    }
+
+    function fetchWithTimeout(url, options, timeoutMs, attemptsLeft) {
+        if (!_origFetch) return Promise.reject(new Error('Fetch is unavailable.'));
+        timeoutMs = timeoutMs || FETCH_TIMEOUT_MS;
+        attemptsLeft = (attemptsLeft === undefined) ? FETCH_RETRIES : attemptsLeft;
+
+        var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        var opts = options ? Object.assign({}, options) : {};
+        if (controller) opts.signal = controller.signal;
+
+        var timedOut = false;
+        var timer = setTimeout(function() {
+            timedOut = true;
+            if (controller) controller.abort();
+        }, timeoutMs);
+
+        return _origFetch(url, opts).then(function(response) {
+            clearTimeout(timer);
+            return response;
+        }, function(err) {
+            clearTimeout(timer);
+            if (timedOut) err = new Error('ZipLoader: request timed out after ' + timeoutMs + 'ms: ' + url);
+            if (attemptsLeft > 0) {
+                return fetchWithTimeout(url, options, timeoutMs, attemptsLeft - 1);
+            }
+            throw err;
+        });
+    }
+
     var _origOpen = XMLHttpRequest.prototype.open;
     var _origSend = XMLHttpRequest.prototype.send;
     var _bitmapHookPrototype = null;
@@ -79310,7 +79378,7 @@ Window_DebugEdit.prototype.updateVariable = function() {
             return fetchExternalPart(url, start, span, label, channel);
         }
         if (!_origFetch) return Promise.reject(new Error('Fetch is unavailable.'));
-        return _origFetch(url).then(function(response) {
+        return fetchWithTimeout(url).then(function(response) {
             if (!response.ok) throw new Error('HTTP ' + response.status + ' for ' + url);
             var total = Number(response.headers.get('content-length')) || 0;
             if (!response.body || !response.body.getReader) {
@@ -79322,8 +79390,28 @@ Window_DebugEdit.prototype.updateVariable = function() {
             var reader = response.body.getReader();
             var chunks = [];
             var loaded = 0;
-            function read() {
+            // A resolved fetch() only proves the connection opened; on flaky
+            // mobile connections the byte stream itself can stall mid-transfer
+            // with no error ever firing on reader.read(). Race each chunk read
+            // against a watchdog so a dead stream fails loudly instead of
+            // hanging the whole boot sequence forever.
+            function readChunkWithWatchdog() {
+                var timedOut = false;
+                var timer = setTimeout(function() {
+                    timedOut = true;
+                    if (reader.cancel) reader.cancel('stall watchdog').catch(function() {});
+                }, FETCH_TIMEOUT_MS);
                 return reader.read().then(function(part) {
+                    clearTimeout(timer);
+                    return part;
+                }, function(err) {
+                    clearTimeout(timer);
+                    if (timedOut) throw new Error('ZipLoader: stream stalled for ' + url);
+                    throw err;
+                });
+            }
+            function read() {
+                return readChunkWithWatchdog().then(function(part) {
                     if (part.done) {
                         var result = new Uint8Array(loaded);
                         var offset = 0;
@@ -79412,12 +79500,12 @@ Window_DebugEdit.prototype.updateVariable = function() {
             });
         }
         if (!_origFetch) return Promise.reject(new Error('Fetch is unavailable.'));
-        return _origFetch(url).then(function(response) {
+        return fetchWithTimeout(url).then(function(response) {
             if (!response.ok) throw new Error('HTTP ' + response.status + ' for ' + url);
-            if (typeof response.blob === 'function') {
-                return response.blob();
-            }
-            return response.arrayBuffer();
+            var bodyPromise = (typeof response.blob === 'function')
+                ? response.blob()
+                : response.arrayBuffer();
+            return withTimeout(bodyPromise, FETCH_TIMEOUT_MS, 'ZipLoader: body read stalled for ' + url);
         }).then(normalizeMediaBlob).then(function(blob) {
             updateByteProgress(blob.size, blob.size, start, span, label, channel);
             return blob;
@@ -79470,7 +79558,7 @@ Window_DebugEdit.prototype.updateVariable = function() {
 
     function loadConfig() {
         if (_configPromise) return _configPromise;
-        _configPromise = _origFetch('base.ini')
+        _configPromise = fetchWithTimeout('base.ini')
             .then(function(response) {
                 if (!response.ok) return '';
                 return response.text();
@@ -79617,7 +79705,7 @@ Window_DebugEdit.prototype.updateVariable = function() {
     // ---- archive metadata (manifest first, HEAD fallback) ---------------------
     function loadManifest() {
         if (_manifest !== undefined) return Promise.resolve(_manifest);
-        return _origFetch('manifest.json').then(function(response) {
+        return fetchWithTimeout('manifest.json').then(function(response) {
             if (!response.ok) { _manifest = null; return null; }
             return response.json().then(function(json) {
                 _manifest = json || null;
@@ -79633,7 +79721,7 @@ Window_DebugEdit.prototype.updateVariable = function() {
     }
 
     function headFetch(url) {
-        return _origFetch(url, { method: 'HEAD' }).then(function(response) {
+        return fetchWithTimeout(url, { method: 'HEAD' }).then(function(response) {
             return { size: Number(response.headers.get('content-length')) || 0 };
         });
     }
@@ -80446,8 +80534,9 @@ Window_DebugEdit.prototype.updateVariable = function() {
         var normalized = normalizePath(path);
         if (_isTauri && (normalized.indexOf('img/') === 0 || normalized.indexOf('audio/') === 0)) {
             if (bytesFor(normalized)) return Promise.resolve(true);
+            var isImage = normalized.indexOf('img/') === 0;
             return ensureNativeFile(normalized).catch(function() {
-                return loadAudioMedia();
+                return isImage ? loadImageMediaOnDemand() : loadAudioMedia();
             });
         }
         if (normalized.indexOf('img/') === 0) {
@@ -82192,13 +82281,42 @@ let wasm_bindgen;
         return this._entryCache;
     };
 
-    ZipMod.prototype.readFile = function (p) {
-        p = normPath(p).toLowerCase();
+    // Building a { normalizedLowercasePath -> originalKey } map (plus the set
+    // of directory paths implied by every file's ancestors) once, up front,
+    // turns readFile()/isDir() from an O(n) scan per call into an O(1) lookup.
+    // Without this, filesInDir() — used whenever a mod declares a whole
+    // directory like "img/" in its file list — calls isDir() once per entry
+    // found by readDir(), which itself scans every file: that's effectively
+    // O(n^2) string comparisons per declared directory, and mods with several
+    // thousand files (a realistic size for an image/audio-heavy asset pack)
+    // turn that into tens of millions of normPath()/toLowerCase() allocations,
+    // pegging a CPU core and stalling the rest of boot indefinitely.
+    ZipMod.prototype._pathIndex = function () {
+        if (this._pathIdx) return this._pathIdx;
+        var byPath = Object.create(null);
+        var dirSet = Object.create(null);
         var keys = this.entryList();
         for (var i = 0; i < keys.length; i++) {
-            if (normPath(keys[i]).toLowerCase() === p) return this.files[keys[i]];
+            var raw = keys[i];
+            var norm = normPath(raw);
+            if (!norm) continue;
+            byPath[norm.toLowerCase()] = raw;
+            var segs = norm.split('/');
+            var acc = '';
+            for (var s = 0; s < segs.length - 1; s++) {
+                if (!segs[s]) continue;
+                acc = acc ? acc + '/' + segs[s] : segs[s];
+                dirSet[acc.toLowerCase()] = true;
+            }
         }
-        return null;
+        this._pathIdx = { byPath: byPath, dirSet: dirSet };
+        return this._pathIdx;
+    };
+
+    ZipMod.prototype.readFile = function (p) {
+        p = normPath(p).toLowerCase();
+        var key = this._pathIndex().byPath[p];
+        return key !== undefined ? this.files[key] : null;
     };
 
     ZipMod.prototype.readDir = function (dir) {
@@ -82222,14 +82340,7 @@ let wasm_bindgen;
 
     ZipMod.prototype.isDir = function (p) {
         p = normPath(p).toLowerCase();
-        var prefix = p + '/';
-        var keys = this.entryList();
-        for (var i = 0; i < keys.length; i++) {
-            var n = normPath(keys[i]).toLowerCase();
-            if (n === p) return false;
-            if (n.indexOf(prefix) === 0) return true;
-        }
-        return false;
+        return !!this._pathIndex().dirSet[p];
     };
 
     ZipMod.prototype.locateModJson = function () {
