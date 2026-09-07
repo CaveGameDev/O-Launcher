@@ -82066,6 +82066,34 @@ let wasm_bindgen;
         return './';
     })();
 
+    // Mod-loader asset resolution: deployment layouts differ — the CDN hosts
+    // these files at the site root, while the min/ + Cloudflare Pages layout
+    // has them under j/. A miss on Pages returns the SPA/404 HTML fallback
+    // (the infamous "expected magic word 00 61 73 6d, found 3c 21 44 4f"),
+    // so candidates are probed and verified by wasm magic word before use,
+    // and the module is handed to wasm_bindgen as raw bytes — bypassing
+    // instantiateStreaming and its server MIME-type requirement entirely.
+    var WASM_MAGIC = [0x00, 0x61, 0x73, 0x6d]; // \0asm
+    async function loadWasmBytes(fileName) {
+        var candidates = [SCRIPT_BASE + fileName, SCRIPT_BASE + 'j/' + fileName];
+        var errors = [];
+        for (var i = 0; i < candidates.length; i++) {
+            try {
+                var res = await fetch(candidates[i], { credentials: 'omit' });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                var bytes = new Uint8Array(await res.arrayBuffer());
+                if (!(bytes.length >= 4 && bytes[0] === WASM_MAGIC[0] && bytes[1] === WASM_MAGIC[1] &&
+                      bytes[2] === WASM_MAGIC[2] && bytes[3] === WASM_MAGIC[3])) {
+                    throw new Error('not a wasm module (HTML fallback page?)');
+                }
+                return bytes;
+            } catch (e) {
+                errors.push(candidates[i] + ' -> ' + (e && e.message));
+            }
+        }
+        throw new Error('no candidate served a valid wasm module (' + errors.join('; ') + ')');
+    }
+
     /* ------------------------------------------------------------------ *
      *  JSON patch (fast-json-patch, RFC 6902, with a built-in fallback)
      * ------------------------------------------------------------------ */
@@ -82432,8 +82460,10 @@ let wasm_bindgen;
     var _rollupPromise = null;
     function loadRollup() {
         if (!_rollupPromise) {
-            var url = SCRIPT_BASE + 'rollup.browser.js';
-            _rollupPromise = import(url).then(function (m) { return m && m.rollup; });
+            // Root first (CDN layout), then j/ (min/ + Pages layout).
+            _rollupPromise = import(SCRIPT_BASE + 'rollup.browser.js')
+                .catch(function () { return import(SCRIPT_BASE + 'j/rollup.browser.js'); })
+                .then(function (m) { return m && m.rollup; });
         }
         return _rollupPromise;
     }
@@ -82894,7 +82924,10 @@ let wasm_bindgen;
         if (typeof wasm_bindgen === 'undefined') throw new Error('imagediff2 wasm loader missing');
         // wasm_bindgen is Object.assign(init, exports): call the init function
         // directly (matching reference early_loader.js), not a .init method.
-        await wasm_bindgen(SCRIPT_BASE + 'imagediff2_bg.wasm');
+        // Passing raw verified bytes skips instantiateStreaming, so the
+        // server's wasm MIME type no longer matters (Cloudflare Pages).
+        var wasmBytes = await loadWasmBytes('imagediff2_bg.wasm');
+        await wasm_bindgen(wasmBytes);
         _imagediffReady = true;
     }
 
